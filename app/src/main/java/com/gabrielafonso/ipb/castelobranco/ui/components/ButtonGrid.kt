@@ -12,8 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.gabrielafonso.ipb.castelobranco.PraiseActivity
+//import com.gabrielafonso.ipb.castelobranco.PraiseActivity
 import com.gabrielafonso.ipb.castelobranco.R
+import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.WorshipHubActivity
 
 data class ButtonInfo(
     val drawable: Int,
@@ -33,7 +34,7 @@ fun ButtonGrid() {
             label = "Louvor",
             color = iconColor,
             onClick = {
-                val intent = Intent(context, PraiseActivity::class.java)
+                val intent = Intent(context, WorshipHubActivity::class.java)
                 context.startActivity(intent)
             }
         ),
