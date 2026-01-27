@@ -20,7 +20,7 @@ import com.gabrielafonso.ipb.castelobranco.ui.components.TopBar
 @Composable
 fun BaseScreen(
     tabName: String,
-    logo: Painter = painterResource(id = R.drawable.teste_logo),
+    logo: Painter = painterResource(id = R.drawable.sarca_ipb),
     accountImage: Painter = painterResource(id = R.drawable.ic_account),
     showBackArrow: Boolean = false,
     onMenuClick: () -> Unit = {}, // talvez vai ter apenas um menu, definir aqui
