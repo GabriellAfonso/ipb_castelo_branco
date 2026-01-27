@@ -1,28 +1,32 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/data/repository/SongsRepositoryImpl.kt
 package com.gabrielafonso.ipb.castelobranco.data.repository
 
 import android.util.Log
-import com.gabrielafonso.ipb.castelobranco.data.api.SongsApi
+import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
 import com.gabrielafonso.ipb.castelobranco.data.api.SongsBySundayDto
+import com.gabrielafonso.ipb.castelobranco.data.api.SuggestedSongDto
 import com.gabrielafonso.ipb.castelobranco.data.api.TopSongDto
 import com.gabrielafonso.ipb.castelobranco.data.api.TopToneDto
-import com.gabrielafonso.ipb.castelobranco.data.local.AppDatabase
 import com.gabrielafonso.ipb.castelobranco.data.local.JsonSnapshotStorage
+import com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong
 import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet
 import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySetItem
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopSong
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopTone
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import retrofit2.Response
 
 class SongsRepositoryImpl(
-    private val api: SongsApi,
-    private val db: AppDatabase,
+    private val api: BackendApi,
     private val jsonStorage: JsonSnapshotStorage
 ) {
     companion object {
@@ -30,6 +34,7 @@ class SongsRepositoryImpl(
         private const val KEY_SONGS_BY_SUNDAY = "songs_by_sunday"
         private const val KEY_TOP_SONGS = "top_songs"
         private const val KEY_TOP_TONES = "top_tones"
+        private const val KEY_SUGGESTED_SONGS = "suggested_songs"
     }
 
     private val json = Json {
@@ -38,6 +43,9 @@ class SongsRepositoryImpl(
         explicitNulls = false
         encodeDefaults = true
     }
+
+    // bump único: qualquer refresh força re-emissão nos observers
+    private val bump = MutableStateFlow(0)
 
     private fun mapToDomain(dto: List<SongsBySundayDto>): List<SundaySet> =
         dto.map { day ->
@@ -60,120 +68,192 @@ class SongsRepositoryImpl(
     private fun mapTopTonesToDomain(dto: List<TopToneDto>): List<TopTone> =
         dto.map { TopTone(tone = it.tone, count = it.count) }
 
-    private fun <Dto, Domain> observeSnapshotList(
+    private fun mapSuggestedToDomain(dto: List<SuggestedSongDto>): List<SuggestedSong> =
+        dto.map { s ->
+            SuggestedSong(
+                id = s.id,
+                songId = s.song.id,
+                title = s.song.title,
+                artist = s.song.artist,
+                date = s.date,
+                tone = s.tone,
+                position = s.position
+            )
+        }.sortedBy { it.position }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun <Dto, Domain> observeSnapshotListWithETag(
         key: String,
         dtoListSerializer: KSerializer<List<Dto>>,
         tag: String,
-        fetchNetwork: suspend () -> List<Dto>,
+        fetchNetwork: suspend (ifNoneMatch: String?) -> Response<List<Dto>>,
         mapToDomain: (List<Dto>) -> List<Domain>
     ): Flow<List<Domain>> =
-        flow {
-            emit(emptyList())
+        bump.flatMapLatest {
+            flow {
+                emit(emptyList())
 
-            val cachedJson = runCatching { jsonStorage.loadOrNull(key) }
-                .onFailure { Log.e(TAG, "Falha ao ler snapshot $key", it) }
-                .getOrNull()
+                val cachedJson = runCatching { jsonStorage.loadOrNull(key) }
+                    .onFailure { Log.e(TAG, "Falha ao ler snapshot $key", it) }
+                    .getOrNull()
 
-            if (!cachedJson.isNullOrBlank()) {
-                runCatching {
-                    val cachedDto = json.decodeFromString(dtoListSerializer, cachedJson)
-                    emit(mapToDomain(cachedDto))
-                }.onFailure { e ->
-                    Log.e(TAG, "Falha ao parsear snapshot $key", e)
+                if (!cachedJson.isNullOrBlank()) {
+                    runCatching {
+                        val cachedDto = json.decodeFromString(dtoListSerializer, cachedJson)
+                        emit(mapToDomain(cachedDto))
+                    }.onFailure { e ->
+                        Log.e(TAG, "Falha ao parsear snapshot $key", e)
+                    }
                 }
-            }
 
-            runCatching {
-                val freshDto = fetchNetwork()
-                val raw = json.encodeToString(dtoListSerializer, freshDto)
-                jsonStorage.save(key, raw)
-                emit(mapToDomain(freshDto))
-            }.onFailure { e ->
-                Log.e(TAG, "Falha na atualização da API ($tag)", e)
-            }
-        }.flowOn(Dispatchers.IO)
+                runCatching {
+                    val lastETag = runCatching { jsonStorage.loadETagOrNull(key) }.getOrNull()
+                    val response = fetchNetwork(lastETag)
 
-    private suspend fun <Dto> refreshSnapshotList(
+                    when {
+                        response.code() == 304 -> {
+                            Log.d(TAG, "$tag: 304 Not Modified")
+                        }
+                        response.isSuccessful -> {
+                            val body = response.body()
+                            if (body != null) {
+                                val raw = json.encodeToString(dtoListSerializer, body)
+                                jsonStorage.save(key, raw)
+
+                                val newETag = response.headers()["ETag"]?.trim()
+                                if (!newETag.isNullOrBlank()) {
+                                    jsonStorage.saveETag(key, newETag)
+                                }
+
+                                emit(mapToDomain(body))
+                                Log.d(TAG, "$tag: atualizou snapshot (200)")
+                            } else {
+                                Log.w(TAG, "$tag: 200 sem body")
+                            }
+                        }
+                        else -> {
+                            Log.w(TAG, "$tag: HTTP ${response.code()}")
+                        }
+                    }
+                }.onFailure { e ->
+                    Log.e(TAG, "Falha na atualização da API ($tag)", e)
+                }
+            }.flowOn(Dispatchers.IO)
+        }
+
+    private suspend fun <Dto> refreshSnapshotListWithETag(
         key: String,
         dtoListSerializer: KSerializer<List<Dto>>,
         tag: String,
-        fetchNetwork: suspend () -> List<Dto>
+        fetchNetwork: suspend (ifNoneMatch: String?) -> Response<List<Dto>>
     ): Boolean {
-        return try {
-            val freshDto = fetchNetwork()
-            val raw = json.encodeToString(dtoListSerializer, freshDto)
-            jsonStorage.save(key, raw)
-            Log.d(TAG, "$tag: salvou snapshot (rede)")
-            true
+        val result = try {
+            val lastETag = runCatching { jsonStorage.loadETagOrNull(key) }.getOrNull()
+            val response = fetchNetwork(lastETag)
+
+            when {
+                response.code() == 304 -> {
+                    Log.d(TAG, "$tag: 304 Not Modified")
+                    true
+                }
+                response.isSuccessful -> {
+                    val body = response.body()
+                    if (body == null) {
+                        Log.w(TAG, "$tag: 200 sem body")
+                        false
+                    } else {
+                        val raw = json.encodeToString(dtoListSerializer, body)
+                        jsonStorage.save(key, raw)
+
+                        val newETag = response.headers()["ETag"]?.trim()
+                        if (!newETag.isNullOrBlank()) {
+                            jsonStorage.saveETag(key, newETag)
+                        }
+
+                        Log.d(TAG, "$tag: salvou snapshot (200)")
+                        true
+                    }
+                }
+                else -> {
+                    Log.w(TAG, "$tag: HTTP ${response.code()}")
+                    runCatching { !jsonStorage.loadOrNull(key).isNullOrBlank() }.getOrDefault(false)
+                }
+            }
         } catch (e: Exception) {
             Log.w(TAG, "$tag: falhou rede, tentando ver snapshot", e)
-            val hasCache = runCatching { !jsonStorage.loadOrNull(key).isNullOrBlank() }
-                .getOrDefault(false)
-
-            if (hasCache) {
-                Log.d(TAG, "$tag: sem rede, mas há snapshot")
-                true
-            } else {
-                Log.w(TAG, "$tag: sem rede e sem snapshot")
-                false
-            }
+            runCatching { !jsonStorage.loadOrNull(key).isNullOrBlank() }.getOrDefault(false)
         }
+
+        // mantém lógica do refresh; só força re-emissão
+        bump.update { it + 1 }
+        return result
     }
 
-    // ===== SongsBySunday =====
-
     fun observeSongsBySunday(): Flow<List<SundaySet>> =
-        observeSnapshotList(
+        observeSnapshotListWithETag(
             key = KEY_SONGS_BY_SUNDAY,
             dtoListSerializer = ListSerializer(SongsBySundayDto.serializer()),
             tag = "observeSongsBySunday",
-            fetchNetwork = { api.getSongsBySunday() },
+            fetchNetwork = { ifNoneMatch -> api.getSongsBySunday(ifNoneMatch) },
             mapToDomain = { mapToDomain(it) }
         )
 
     suspend fun refreshSongsBySunday(): Boolean =
-        refreshSnapshotList(
+        refreshSnapshotListWithETag(
             key = KEY_SONGS_BY_SUNDAY,
             dtoListSerializer = ListSerializer(SongsBySundayDto.serializer()),
             tag = "refreshSongsBySunday",
-            fetchNetwork = { api.getSongsBySunday() }
+            fetchNetwork = { ifNoneMatch -> api.getSongsBySunday(ifNoneMatch) }
         )
 
-    // ===== TopSongs =====
-
     fun observeTopSongs(): Flow<List<TopSong>> =
-        observeSnapshotList(
+        observeSnapshotListWithETag(
             key = KEY_TOP_SONGS,
             dtoListSerializer = ListSerializer(TopSongDto.serializer()),
             tag = "observeTopSongs",
-            fetchNetwork = { api.getTopSongs() },
+            fetchNetwork = { ifNoneMatch -> api.getTopSongs(ifNoneMatch) },
             mapToDomain = { mapTopSongsToDomain(it) }
         )
 
     suspend fun refreshTopSongs(): Boolean =
-        refreshSnapshotList(
+        refreshSnapshotListWithETag(
             key = KEY_TOP_SONGS,
             dtoListSerializer = ListSerializer(TopSongDto.serializer()),
             tag = "refreshTopSongs",
-            fetchNetwork = { api.getTopSongs() }
+            fetchNetwork = { ifNoneMatch -> api.getTopSongs(ifNoneMatch) }
         )
 
-    // ===== TopTones (igual ao TopSongs, sem get) =====
-
     fun observeTopTones(): Flow<List<TopTone>> =
-        observeSnapshotList(
+        observeSnapshotListWithETag(
             key = KEY_TOP_TONES,
             dtoListSerializer = ListSerializer(TopToneDto.serializer()),
             tag = "observeTopTones",
-            fetchNetwork = { api.getTopTones() },
+            fetchNetwork = { ifNoneMatch -> api.getTopTones(ifNoneMatch) },
             mapToDomain = { mapTopTonesToDomain(it) }
         )
 
     suspend fun refreshTopTones(): Boolean =
-        refreshSnapshotList(
+        refreshSnapshotListWithETag(
             key = KEY_TOP_TONES,
             dtoListSerializer = ListSerializer(TopToneDto.serializer()),
             tag = "refreshTopTones",
-            fetchNetwork = { api.getTopTones() }
+            fetchNetwork = { ifNoneMatch -> api.getTopTones(ifNoneMatch) }
+        )
+
+    fun observeSuggestedSongs(): Flow<List<SuggestedSong>> =
+        observeSnapshotListWithETag(
+            key = KEY_SUGGESTED_SONGS,
+            dtoListSerializer = ListSerializer(SuggestedSongDto.serializer()),
+            tag = "observeSuggestedSongs",
+            fetchNetwork = { ifNoneMatch -> api.getSuggestedSongs(ifNoneMatch) },
+            mapToDomain = { mapSuggestedToDomain(it) }
+        )
+
+    suspend fun refreshSuggestedSongs(): Boolean =
+        refreshSnapshotListWithETag(
+            key = KEY_SUGGESTED_SONGS,
+            dtoListSerializer = ListSerializer(SuggestedSongDto.serializer()),
+            tag = "refreshSuggestedSongs",
+            fetchNetwork = { ifNoneMatch -> api.getSuggestedSongs(ifNoneMatch) }
         )
 }
