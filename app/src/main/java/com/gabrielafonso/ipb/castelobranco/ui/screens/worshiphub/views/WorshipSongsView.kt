@@ -39,12 +39,15 @@ fun WorshipSongsTableScreen(
     val sundays by viewModel.lastSundays.collectAsStateWithLifecycle()
     val topSongs by viewModel.topSongs.collectAsStateWithLifecycle()
     val topTones by viewModel.topTones.collectAsStateWithLifecycle()
+    val suggestedSongs by viewModel.suggestedSongs.collectAsStateWithLifecycle()
 
     WorshipSongsTableUi(
         onBack = onBack,
         sundays = sundays,
         topSongs = topSongs,
-        topTones = topTones
+        topTones = topTones,
+        suggestedSongs = suggestedSongs,
+        viewModel = viewModel
     )
 }
 @Composable
@@ -52,7 +55,9 @@ fun WorshipSongsTableUi(
     onBack: () -> Unit,
     sundays: List<com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet>,
     topSongs: List<com.gabrielafonso.ipb.castelobranco.domain.model.TopSong>,
-    topTones: List<com.gabrielafonso.ipb.castelobranco.domain.model.TopTone>
+    topTones: List<com.gabrielafonso.ipb.castelobranco.domain.model.TopTone>,
+    suggestedSongs: List<com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong>,
+    viewModel: WorshipHubViewModel,
 ) {
     val tabs = listOf(
         "Ultimos Domingos",
@@ -105,7 +110,9 @@ fun WorshipSongsTableUi(
                 0 -> LastSundaysTab(sundays = sundays)
                 1 -> TopSongsTab(topSongs = topSongs)
                 2 -> TopTonesTab(topTones = topTones)
-                3 -> SuggestionsTab()
+                3 -> SuggestionsTab(
+                    suggestedSongs = suggestedSongs,
+                    viewModel = viewModel)
             }
         }
     }
