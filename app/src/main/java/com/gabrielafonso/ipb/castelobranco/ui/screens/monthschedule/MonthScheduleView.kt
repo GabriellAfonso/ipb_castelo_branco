@@ -1,0 +1,203 @@
+// app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/monthschedule/MonthScheduleView.kt
+package com.gabrielafonso.ipb.castelobranco.ui.screens.monthschedule
+
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gabrielafonso.ipb.castelobranco.R
+import com.gabrielafonso.ipb.castelobranco.domain.model.MonthSchedule
+import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
+import java.util.Locale
+import androidx.compose.ui.graphics.Color
+@Composable
+fun MonthScheduleView(
+    viewModel: MonthScheduleViewModel,
+) {
+    val activity = LocalActivity.current ?: LocalContext.current.findActivity()
+
+    val monthSchedule by viewModel.monthSchedule.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshingMonthSchedule.collectAsStateWithLifecycle()
+
+    val formattedText = monthSchedule?.toWhatsappText().orEmpty()
+
+    BaseScreen(
+        tabName = "Escala Mensal",
+        logo = painterResource(id = R.drawable.calendar_icon),
+        showBackArrow = true,
+        onBackClick = { activity?.finish() }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // \* Card primeiro
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White // fixa (não depende do tema)
+                )
+            ) {
+                val innerScroll = rememberScrollState()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(innerScroll)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = formattedText,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            // \* Botões embaixo do Card
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { viewModel.refreshMonthSchedule() },
+                    enabled = !isRefreshing,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4B3CF0), // verde fixo (exemplo)
+                    contentColor = Color(0xFFd1e7dd)
+                )
+
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp), // \* não cresce o botão
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(text = "Gerando...")
+                    } else {
+                        Text(text = "Nova Escala")
+                    }
+                }
+
+                Button(
+                    onClick = { activity?.shareText(formattedText) },
+                    enabled = formattedText.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4B3CF0), // verde fixo (exemplo)
+                    contentColor = Color.White
+                )
+                ) {
+                    Text(text = "Compartilhar")
+                }
+            }
+        }
+    }
+}
+
+private fun MonthSchedule.toWhatsappText(): String {
+    val monthName = monthPtBr(month).uppercase(Locale("pt", "BR"))
+
+    val sb = StringBuilder()
+    sb.append("ESCALA DE ").append(monthName).append(" ").append(year).append(" - DIRIGENTES E RESPONSÁVEIS\n\n")
+
+    val order = listOf("terça", "terca", "quinta", "domingo")
+
+    val entriesSorted = schedule.entries
+        .sortedWith(
+            compareBy<Map.Entry<String, Any?>> { entry ->
+                val t = entry.key.trim().lowercase(Locale("pt", "BR"))
+                order.indexOfFirst { t.startsWith(it) }.let { if (it == -1) Int.MAX_VALUE else it }
+            }.thenBy { it.key.lowercase(Locale("pt", "BR")) }
+        )
+
+    // Mantém seu processamento original, só trocando a ordem dos blocos.
+    // Se `schedule` não for `Map<String, ScheduleEntry>` no seu model, ajuste o tipo acima e aqui.
+    @Suppress("UNCHECKED_CAST")
+    (entriesSorted as List<Map.Entry<String, com.gabrielafonso.ipb.castelobranco.domain.model.ScheduleEntry>>)
+        .forEach { (title, entry) ->
+            sb.append(title)
+            entry.time?.takeIf { it.isNotBlank() }?.let { sb.append(" (").append(it).append(")") }
+            sb.append("\n\n")
+
+            entry.items
+                .sortedBy { it.day }
+                .forEach { item ->
+                    sb.append(String.format("%02d", item.day)).append("- ").append(item.member).append("\n")
+                }
+
+            sb.append("\n")
+        }
+
+    sb.append("*Cafezinho pós culto de Adoração (Ceia) todo 4° Domingo\n\n")
+    sb.append("* Aberto a participação de qualquer irmão.\n")
+    sb.append("DEUS ABENÇOE")
+
+    return sb.toString().trim()
+}
+
+private fun monthPtBr(month: Int): String =
+    when (month) {
+        1 -> "Janeiro"
+        2 -> "Fevereiro"
+        3 -> "Março"
+        4 -> "Abril"
+        5 -> "Maio"
+        6 -> "Junho"
+        7 -> "Julho"
+        8 -> "Agosto"
+        9 -> "Setembro"
+        10 -> "Outubro"
+        11 -> "Novembro"
+        12 -> "Dezembro"
+        else -> "Mês"
+    }
+
+private fun Activity.shareText(text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(sendIntent, "Compartilhar"))
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
