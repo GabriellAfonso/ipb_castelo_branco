@@ -16,7 +16,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val app = application as MyApp
         val viewModel = MainViewModel(
-            app.appContainer.songsRepository
+            app.appContainer.songsRepository,
+            app.appContainer.hymnalRepository,
+            app.appContainer.monthScheduleRepository
         )
         enableEdgeToEdge()
         setContent {
