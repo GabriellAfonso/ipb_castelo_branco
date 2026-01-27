@@ -18,8 +18,7 @@ constraintlayout = "2.1.4"
 firebaseAppdistributionGradle = "5.2.0"
 runtimeLivedata = "1.10.1"
 foundationLayout = "1.10.1"
-room = "2.8.4"
-media3Database = "1.9.0"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,10 +47,6 @@ androidx-compose-runtime-livedata = { group = "androidx.compose.runtime", name =
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-androidx-media3-database = { group = "androidx.media3", name = "media3-database", version.ref = "media3Database" }
 
 
 [plugins]

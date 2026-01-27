@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 
-    id("org.jetbrains.kotlin.kapt")
+//    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -88,7 +88,7 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.androidx.compose.runtime.livedata)
     implementation(libs.androidx.compose.foundation.layout)
-    implementation(libs.androidx.media3.database)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -101,8 +101,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
     implementation("androidx.navigation:navigation-compose:2.9.6")
 
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+
+//    kapt(libs.androidx.room.compiler)
 
 }
