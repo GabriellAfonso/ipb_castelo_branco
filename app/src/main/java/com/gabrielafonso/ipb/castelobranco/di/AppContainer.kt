@@ -1,11 +1,11 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/di/AppContainer.kt
 package com.gabrielafonso.ipb.castelobranco.core.di
 
 import android.content.Context
 import com.gabrielafonso.ipb.castelobranco.BuildConfig
-import com.gabrielafonso.ipb.castelobranco.data.api.SongsApi
-import com.gabrielafonso.ipb.castelobranco.data.local.DatabaseProvider
+import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
 import com.gabrielafonso.ipb.castelobranco.data.local.JsonSnapshotStorage
+import com.gabrielafonso.ipb.castelobranco.data.repository.HymnalRepositoryImpl
+import com.gabrielafonso.ipb.castelobranco.data.repository.MonthScheduleRepositoryImpl
 import com.gabrielafonso.ipb.castelobranco.data.repository.SongsRepositoryImpl
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -42,16 +42,25 @@ class AppContainer(context: Context) {
         .client(okHttpClient)
         .build()
 
-    val songsApi: SongsApi = retrofit.create(SongsApi::class.java)
-
-    private val db = DatabaseProvider.get(appContext)
+    val backendApi: BackendApi = retrofit.create(BackendApi::class.java)
 
     private val jsonSnapshotStorage = JsonSnapshotStorage(appContext)
 
     val songsRepository: SongsRepositoryImpl =
         SongsRepositoryImpl(
-            api = songsApi,
-            db = db,
+            api = backendApi,
+            jsonStorage = jsonSnapshotStorage
+        )
+
+    val hymnalRepository: HymnalRepositoryImpl =
+        HymnalRepositoryImpl(
+            api = backendApi,
+            jsonStorage = jsonSnapshotStorage
+        )
+
+    val monthScheduleRepository: MonthScheduleRepositoryImpl =
+        MonthScheduleRepositoryImpl(
+            api = backendApi,
             jsonStorage = jsonSnapshotStorage
         )
 }
