@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubScreen
+import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubView
 
 object WorshipHubRoutes {
     const val Hub = "worship_hub"
@@ -19,7 +19,7 @@ fun WorshipHubNavGraph(
 ) {
     NavHost(navController = navController, startDestination = WorshipHubRoutes.Hub) {
         composable(WorshipHubRoutes.Hub) {
-            WorshipHubScreen(
+            WorshipHubView(
                 onTablesClick = { navController.navigate(WorshipHubRoutes.Tables) },
             )
         }

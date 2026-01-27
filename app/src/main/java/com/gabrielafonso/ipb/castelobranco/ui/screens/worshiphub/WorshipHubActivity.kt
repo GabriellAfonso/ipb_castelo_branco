@@ -5,11 +5,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet
-import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySetItem
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseActivity
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseViewModelProvider
-import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubScreen
+import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubView
 import com.gabrielafonso.ipb.castelobranco.ui.theme.IPBCasteloBrancoTheme
 
 class WorshipHubActivity : BaseActivity() {
@@ -42,40 +40,6 @@ class WorshipHubActivity : BaseActivity() {
 @Composable
 fun PreviewWorshipHub() {
     IPBCasteloBrancoTheme {
-        WorshipHubScreen(onTablesClick = {})
+        WorshipHubView(onTablesClick = {})
     }
 }
-
-
-@Preview(name = "SongsTable", showBackground = true)
-@Composable
-fun PreviewSongsTable() {
-    val fakeSundays = listOf(
-        SundaySet(
-            date = "2026-01-21",
-            songs = listOf(
-                SundaySetItem(position = 1, title = "Música 1", tone = "C", artist = "Artista A"),
-                SundaySetItem(position = 2, title = "Música 2", tone = "G", artist = "Artista B")
-            )
-        )
-    )
-
-    IPBCasteloBrancoTheme {
-        WorshipSongsTableUi(
-            onBack = {},
-            sundays = fakeSundays,
-            topSongs = emptyList(),
-            topTones = emptyList()
-
-        )
-    }
-}
-// Exemplo para outras screens:
-// @Preview(name = "SongsTable", showBackground = true)
-// @Composable
-// fun PreviewSongsTable() {
-//     IPBCasteloBrancoTheme {
-//         SongsTableScreen(onBack = {})
-//     }
-// }
-
