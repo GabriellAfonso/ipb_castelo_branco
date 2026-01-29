@@ -6,14 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.data.repository.MonthScheduleRepositoryImpl
 import com.gabrielafonso.ipb.castelobranco.domain.model.MonthSchedule
 import com.gabrielafonso.ipb.castelobranco.domain.repository.MonthScheduleRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MonthScheduleViewModel(
+@HiltViewModel
+class MonthScheduleViewModel @Inject constructor(
     private val repository: MonthScheduleRepository
 ) : ViewModel() {
 
