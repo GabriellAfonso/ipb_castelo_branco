@@ -4,12 +4,12 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
+import com.gabrielafonso.ipb.castelobranco.MyApp
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseActivity
-import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseViewModelProvider
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class HymnalActivity : BaseActivity() {
-
-    private val viewModel: HymnalViewModel by viewModels { BaseViewModelProvider.Factory }
 
     override fun onPreCreate(savedInstanceState: Bundle?) {
         super.onPreCreate(savedInstanceState)
@@ -24,7 +24,7 @@ class HymnalActivity : BaseActivity() {
         val navController = rememberNavController()
         HymnalNavGraph(
             navController = navController,
-            viewModel = viewModel
+            onFinish = { finish() }
         )
     }
 }
