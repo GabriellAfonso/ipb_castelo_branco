@@ -16,8 +16,9 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.TopTone
 import com.gabrielafonso.ipb.castelobranco.domain.repository.SongsRepository
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
-class SongsRepositoryImpl(
+class SongsRepositoryImpl @Inject constructor(
     private val api: BackendApi,
     private val jsonStorage: JsonSnapshotStorage
 ) : SongsRepository {

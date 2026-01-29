@@ -1,4 +1,4 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/data/repository/HymnalRepositoryImpl.kt
+// kotlin
 package com.gabrielafonso.ipb.castelobranco.data.repository
 
 import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
@@ -11,8 +11,9 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.HymnLyricType
 import com.gabrielafonso.ipb.castelobranco.domain.repository.HymnalRepository
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
-class HymnalRepositoryImpl(
+class HymnalRepositoryImpl @Inject constructor(
     private val api: BackendApi,
     private val jsonStorage: JsonSnapshotStorage
 ) : HymnalRepository {

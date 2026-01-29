@@ -1,4 +1,4 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/data/repository/MonthScheduleRepositoryImpl.kt
+// kotlin
 package com.gabrielafonso.ipb.castelobranco.data.repository
 
 import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
@@ -10,8 +10,9 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.ScheduleEntry
 import com.gabrielafonso.ipb.castelobranco.domain.model.ScheduleItem
 import com.gabrielafonso.ipb.castelobranco.domain.repository.MonthScheduleRepository
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
-class MonthScheduleRepositoryImpl(
+class MonthScheduleRepositoryImpl @Inject constructor(
     private val api: BackendApi,
     private val jsonStorage: JsonSnapshotStorage
 ) : MonthScheduleRepository {
