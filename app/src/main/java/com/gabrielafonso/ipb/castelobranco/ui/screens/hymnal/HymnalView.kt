@@ -1,10 +1,6 @@
-// `app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/hymnal/HymnalView.kt`
+// kotlin
 package com.gabrielafonso.ipb.castelobranco.ui.screens.hymnal
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,15 +23,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,36 +40,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.domain.model.Hymn
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
+import com.gabrielafonso.ipb.castelobranco.ui.screens.base.findActivity
+import androidx.compose.runtime.getValue
+
+data class HymnalUiState(
+    val hymns: List<Hymn> = emptyList(),
+    val query: String = ""
+)
+
+data class HymnalActions(
+    val teste: () -> Unit,
+    val onQueryChange: (String) -> Unit,
+    val onHymnClick: (String) -> Unit,
+)
 
 @Composable
 fun HymnalView(
     viewModel: HymnalViewModel,
-    onHymnClick: (String) -> Unit
+    onHymnClick: (String) -> Unit,
+    onBackClick: () -> Unit
 ) {
-    val activity = LocalActivity.current ?: LocalContext.current.findActivity()
-    val hymnal by viewModel.hymnal.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var query by remember { mutableStateOf("") }
+    val actions = HymnalActions(
+        onQueryChange = viewModel::onQueryChange,
+        teste = viewModel::teste,
+        onHymnClick = onHymnClick
+    )
 
-    val filtered = remember(query, hymnal) {
-        val q = query.trim()
-        if (q.isBlank()) hymnal
-        else hymnal.filter { hymn ->
-            hymn.number.contains(q, ignoreCase = true) ||
-                    hymn.title.contains(q, ignoreCase = true) ||
-                    hymn.lyrics.any { it.text.contains(q, ignoreCase = true) }
-        }
-    }
+    HymnalScreen(
+        state = state,
+        actions = actions,
+        onBackClick = onBackClick
+    )
+}
+
+@Composable
+fun HymnalScreen(
+    state: HymnalUiState,
+    actions: HymnalActions,
+    onBackClick: () -> Unit
+) {
 
     BaseScreen(
         tabName = "Hinário",
         logo = painterResource(id = R.drawable.sarca_ipb),
         showBackArrow = true,
-        onBackClick = { activity?.finish() }
+        onBackClick = onBackClick
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -83,24 +100,50 @@ fun HymnalView(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            // calcular filtro uma vez por composição (evita múltiplos .filter)
+            val filteredHymns = remember(state.hymns, state.query) {
+                val q = state.query.trim()
+                if (q.isBlank()) state.hymns
+                else state.hymns.filter { hymn ->
+                    hymn.number.contains(q, true) ||
+                            hymn.title.contains(q, true) ||
+                            hymn.lyrics.any { it.text.contains(q, true) }
+                }
+            }
+
             SearchCard(
-                query = query,
-                onQueryChange = { query = it },
-                resultsCount = filtered.size,
-                onSearchClick = { /* opcional */ },
+                query = state.query,
+                onQueryChange = actions.onQueryChange,
+                resultsCount = filteredHymns.size,
+                onSearchClick = {}
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filtered, key = { it.number }) { item ->
-                    HymnRow(
-                        item = item,
-                        onClick = { onHymnClick(item.number) }
+            if (filteredHymns.isEmpty()) {
+                // estado vazio
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Nenhum resultado",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
-                    Divider(color = Color(0xFFE7E7E7))
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(filteredHymns, key = { it.number }) { item ->
+                        HymnRow(
+                            item = item,
+                            onClick = { actions.onHymnClick(item.number) }
+                        )
+                        Divider(color = Color(0xFFE7E7E7))
+                    }
                 }
             }
         }
@@ -116,7 +159,6 @@ private fun SearchCard(
 ) {
     val cardBg = Color(0xFFE9E9E9)
     val green = Color(0xFF0F6B5C)
-    val blue = Color(0xFF38A6D8)
 
     Card(
         modifier = Modifier
@@ -142,6 +184,15 @@ private fun SearchCard(
                         .height(56.dp),
                     singleLine = true,
                     placeholder = { Text(text = "") },
+                    trailingIcon = {
+                        IconButton(onClick = onSearchClick) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Pesquisar",
+                                tint = green
+                            )
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -153,29 +204,6 @@ private fun SearchCard(
                 )
 
                 Spacer(modifier = Modifier.size(12.dp))
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.Transparent)
-                            .clickable(onClick = onSearchClick),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Pesquisar",
-                            tint = green,
-                            modifier = Modifier.size(30.dp)
-                        )
-                    }
-
-
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -243,10 +271,4 @@ private fun HymnRow(
             )
         }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
