@@ -1,6 +1,7 @@
 package com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,17 +16,25 @@ object WorshipHubRoutes {
 @Composable
 fun WorshipHubNavGraph(
     navController: NavHostController,
-    viewModel: WorshipHubViewModel
+    onFinish: () -> Unit,
+    viewModel: WorshipHubViewModel = hiltViewModel()
 ) {
     NavHost(navController = navController, startDestination = WorshipHubRoutes.Hub) {
         composable(WorshipHubRoutes.Hub) {
             WorshipHubView(
                 onTablesClick = { navController.navigate(WorshipHubRoutes.Tables) },
+                onBackClick = {
+                    val popped = navController.popBackStack()
+                    if (!popped) onFinish()
+                }
             )
         }
         composable(WorshipHubRoutes.Tables) {
             WorshipSongsTableScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    val popped = navController.popBackStack()
+                    if (!popped) onFinish()
+                },
                 viewModel = viewModel
             )
         }
