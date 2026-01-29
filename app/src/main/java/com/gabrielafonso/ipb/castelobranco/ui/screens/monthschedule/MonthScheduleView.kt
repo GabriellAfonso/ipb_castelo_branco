@@ -38,12 +38,14 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.MonthSchedule
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
 import java.util.Locale
 import androidx.compose.ui.graphics.Color
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+
 @Composable
 fun MonthScheduleView(
-    viewModel: MonthScheduleViewModel,
+    viewModel: MonthScheduleViewModel = hiltViewModel(),
+    onBackClick: () -> Unit,
+    onShare: (String) -> Unit
 ) {
-    val activity = LocalActivity.current ?: LocalContext.current.findActivity()
-
     val monthSchedule by viewModel.monthSchedule.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshingMonthSchedule.collectAsStateWithLifecycle()
 
@@ -53,7 +55,7 @@ fun MonthScheduleView(
         tabName = "Escala Mensal",
         logo = painterResource(id = R.drawable.calendar_icon),
         showBackArrow = true,
-        onBackClick = { activity?.finish() }
+        onBackClick = onBackClick
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -62,13 +64,12 @@ fun MonthScheduleView(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // \* Card primeiro
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 520.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White // fixa (não depende do tema)
+                    containerColor = Color.White
                 )
             ) {
                 val innerScroll = rememberScrollState()
@@ -86,7 +87,6 @@ fun MonthScheduleView(
                 }
             }
 
-            // \* Botões embaixo do Card
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -97,14 +97,13 @@ fun MonthScheduleView(
                     enabled = !isRefreshing,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4B3CF0), // verde fixo (exemplo)
-                    contentColor = Color(0xFFd1e7dd)
-                )
-
+                        containerColor = Color(0xFF4B3CF0),
+                        contentColor = Color(0xFFd1e7dd)
+                    )
                 ) {
                     if (isRefreshing) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp), // \* não cresce o botão
+                            modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.size(8.dp))
@@ -115,13 +114,13 @@ fun MonthScheduleView(
                 }
 
                 Button(
-                    onClick = { activity?.shareText(formattedText) },
+                    onClick = { onShare(formattedText) },
                     enabled = formattedText.isNotBlank(),
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4B3CF0), // verde fixo (exemplo)
-                    contentColor = Color.White
-                )
+                        containerColor = Color(0xFF4B3CF0),
+                        contentColor = Color.White
+                    )
                 ) {
                     Text(text = "Compartilhar")
                 }
@@ -129,6 +128,7 @@ fun MonthScheduleView(
         }
     }
 }
+
 
 private fun MonthSchedule.toWhatsappText(): String {
     val monthName = monthPtBr(month).uppercase(Locale("pt", "BR"))
