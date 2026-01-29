@@ -1,18 +1,16 @@
 package com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub
 
 import android.os.Bundle
-import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseActivity
-import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseViewModelProvider
-import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubView
 import com.gabrielafonso.ipb.castelobranco.ui.theme.IPBCasteloBrancoTheme
+import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseActivity
+import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.views.WorshipHubView
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class WorshipHubActivity : BaseActivity() {
-
-    private val viewModel: WorshipHubViewModel by viewModels { BaseViewModelProvider.Factory }
 
     override fun onPreCreate(savedInstanceState: Bundle?) {
         super.onPreCreate(savedInstanceState)
@@ -30,7 +28,7 @@ class WorshipHubActivity : BaseActivity() {
         val navController = rememberNavController()
         WorshipHubNavGraph(
             navController = navController,
-            viewModel = viewModel
+            onFinish = { finish() }
         )
 //        WorshipHubScreen()
     }
@@ -40,6 +38,6 @@ class WorshipHubActivity : BaseActivity() {
 @Composable
 fun PreviewWorshipHub() {
     IPBCasteloBrancoTheme {
-        WorshipHubView(onTablesClick = {})
+        WorshipHubView(onTablesClick = {}, onBackClick = {})
     }
 }
