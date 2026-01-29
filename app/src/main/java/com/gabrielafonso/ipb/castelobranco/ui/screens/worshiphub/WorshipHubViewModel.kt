@@ -9,14 +9,17 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong
 import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopSong
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopTone
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import javax.inject.Inject
 
-class WorshipHubViewModel(
+@HiltViewModel
+class WorshipHubViewModel @Inject constructor(
     private val repository: SongsRepository
 ) : ViewModel() {
 
