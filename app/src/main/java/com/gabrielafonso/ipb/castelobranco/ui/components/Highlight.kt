@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun Highlight() {
     val corner = 24.dp
-    val background = Color(0xFFF7F7F7)
+    val background = Color.Transparent
 
     Box(
         modifier = Modifier
