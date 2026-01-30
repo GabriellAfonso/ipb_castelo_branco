@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -21,43 +22,56 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielafonso.ipb.castelobranco.R
+import com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong
+import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopSong
+import com.gabrielafonso.ipb.castelobranco.domain.model.TopTone
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
 import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.tabs.LastSundaysTab
 import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.tabs.SuggestionsTab
 import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.tabs.TopSongsTab
 import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.tabs.TopTonesTab
 
+data class WorshipSongsUiState(
+    val sundays: List<SundaySet> = emptyList(),
+    val topSongs: List<TopSong> = emptyList(),
+    val topTones: List<TopTone> = emptyList(),
+    val suggestedSongs: List<SuggestedSong> = emptyList(),
+    val isRefreshingSuggestions: Boolean = false
+)
+
+data class WorshipSongsActions(
+    val onBackClick: () -> Unit,
+    val onRefreshSuggestions: () -> Unit
+)
 
 @Composable
-fun WorshipSongsTableScreen(
-    onBack: () -> Unit,
+fun WorshipSongsTableView(
+    onBackClick: () -> Unit,
     viewModel: WorshipHubViewModel
 ) {
-    val sundays by viewModel.lastSundays.collectAsStateWithLifecycle()
-    val topSongs by viewModel.topSongs.collectAsStateWithLifecycle()
-    val topTones by viewModel.topTones.collectAsStateWithLifecycle()
-    val suggestedSongs by viewModel.suggestedSongs.collectAsStateWithLifecycle()
-
-    WorshipSongsTableUi(
-        onBack = onBack,
-        sundays = sundays,
-        topSongs = topSongs,
-        topTones = topTones,
-        suggestedSongs = suggestedSongs,
-        viewModel = viewModel
+    val state = WorshipSongsUiState(
+        sundays = viewModel.lastSundays.collectAsStateWithLifecycle().value,
+        topSongs = viewModel.topSongs.collectAsStateWithLifecycle().value,
+        topTones = viewModel.topTones.collectAsStateWithLifecycle().value,
+        suggestedSongs = viewModel.suggestedSongs.collectAsStateWithLifecycle().value,
+        isRefreshingSuggestions = viewModel.isRefreshingSuggestedSongs.collectAsStateWithLifecycle().value
     )
+
+    val actions = WorshipSongsActions(
+        onBackClick = onBackClick,
+        onRefreshSuggestions = viewModel::refreshSuggestedSongs
+    )
+
+    WorshipSongsTableScreen(state = state, actions = actions)
 }
 @Composable
-fun WorshipSongsTableUi(
-    onBack: () -> Unit,
-    sundays: List<com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet>,
-    topSongs: List<com.gabrielafonso.ipb.castelobranco.domain.model.TopSong>,
-    topTones: List<com.gabrielafonso.ipb.castelobranco.domain.model.TopTone>,
-    suggestedSongs: List<com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong>,
-    viewModel: WorshipHubViewModel,
+fun WorshipSongsTableScreen(
+    state: WorshipSongsUiState,
+    actions: WorshipSongsActions,
 ) {
     val tabs = listOf(
         "Ultimos Domingos",
@@ -67,19 +81,19 @@ fun WorshipSongsTableUi(
     )
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    val barColor = Color(0xFFc7dbd2)
-    val indicatorColor = Color(0xFF2E7D6C)
+    val barColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val indicatorColor = MaterialTheme.colorScheme.secondary
 
     BaseScreen(
         tabName = "Tabelas",
         logo = painterResource(id = R.drawable.louvor_icon),
         showBackArrow = true,
-        onBackClick = onBack
+        onBackClick = actions.onBackClick
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFc7dbd8))
+                .background(color = MaterialTheme.colorScheme.surface)
                 .padding(innerPadding),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -101,18 +115,20 @@ fun WorshipSongsTableUi(
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(text = title) }
+                        text = { Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp) }
                     )
                 }
             }
 
             when (selectedTabIndex) {
-                0 -> LastSundaysTab(sundays = sundays)
-                1 -> TopSongsTab(topSongs = topSongs)
-                2 -> TopTonesTab(topTones = topTones)
+                0 -> LastSundaysTab(sundays = state.sundays)
+                1 -> TopSongsTab(topSongs = state.topSongs)
+                2 -> TopTonesTab(topTones = state.topTones)
                 3 -> SuggestionsTab(
-                    suggestedSongs = suggestedSongs,
-                    viewModel = viewModel)
+                    suggestedSongs = state.suggestedSongs,
+                    isRefreshing = state.isRefreshingSuggestions,
+                    onRefreshClick = actions.onRefreshSuggestions
+                )
             }
         }
     }
