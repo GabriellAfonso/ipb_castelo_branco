@@ -55,7 +55,7 @@ fun MonthScheduleView(
         tabName = "Escala Mensal",
         logo = painterResource(id = R.drawable.calendar_icon),
         showBackArrow = true,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -69,7 +69,7 @@ fun MonthScheduleView(
                     .fillMaxWidth()
                     .heightIn(max = 520.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
             ) {
                 val innerScroll = rememberScrollState()
@@ -82,7 +82,8 @@ fun MonthScheduleView(
                 ) {
                     Text(
                         text = formattedText,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -97,14 +98,17 @@ fun MonthScheduleView(
                     enabled = !isRefreshing,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4B3CF0),
-                        contentColor = Color(0xFFd1e7dd)
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
                     )
                 ) {
                     if (isRefreshing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text(text = "Gerando...")
@@ -118,8 +122,10 @@ fun MonthScheduleView(
                     enabled = formattedText.isNotBlank(),
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4B3CF0),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
                     )
                 ) {
                     Text(text = "Compartilhar")
