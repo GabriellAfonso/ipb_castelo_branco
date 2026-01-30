@@ -46,7 +46,6 @@ fun WorshipHubView(
                 image = painterResource(id = R.drawable.table_icon),
                 onClick = onTablesClick,
                 text = "Tabelas",
-                backgroundColor = Color(0xFF157C53),
                 size = 100.dp
             )
         }
