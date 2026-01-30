@@ -34,10 +34,11 @@ fun BaseScreen(
     onMenuClick: () -> Unit = {}, // talvez vai ter apenas um menu, definir aqui
     onBackClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
-    content: @Composable (innerPadding: PaddingValues) -> Unit
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    content: @Composable (innerPadding: PaddingValues) -> Unit,
 ) {
     Scaffold(
-        containerColor =  MaterialTheme.colorScheme.background,
+        containerColor =  containerColor,
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopBar(
