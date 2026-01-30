@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.painterResource
 import com.gabrielafonso.ipb.castelobranco.R
+import com.gabrielafonso.ipb.castelobranco.ui.theme.ipbGreen
 import com.gabrielafonso.ipb.castelobranco.ui.theme.onPrimaryLight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +37,7 @@ fun TopBar(
 ) {
     CenterAlignedTopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color(0xFF045A48),
+            containerColor = ipbGreen,
             titleContentColor = onPrimaryLight,
             navigationIconContentColor = onPrimaryLight,
             actionIconContentColor = onPrimaryLight

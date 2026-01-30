@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.gabrielafonso.ipb.castelobranco.ui.theme.ipbGreen
 
 private val ButtonCornerRadius = 16.dp
 private val ButtonContentPadding = 8.dp
@@ -24,7 +25,7 @@ fun CustomButton(
     text: String,
     modifier: Modifier = Modifier,
     size: Dp = 100.dp,
-    backgroundColor: Color = Color(0xFF045A48),
+    backgroundColor: Color = ipbGreen,
 ) {
     Button(
         onClick = onClick,
