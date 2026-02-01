@@ -1,6 +1,8 @@
 package com.gabrielafonso.ipb.castelobranco.ui.screens.settings
 
 import android.app.Activity
+import android.app.ActivityOptions
+import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,8 +19,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.ui.components.ThemeToggle
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
+import com.gabrielafonso.ipb.castelobranco.ui.screens.main.MainActivity
 import com.gabrielafonso.ipb.castelobranco.ui.settings.SettingsViewModel
-import com.gabrielafonso.ipb.castelobranco.util.ActivityEvents
 import kotlinx.coroutines.flow.collect
 
 @Composable
@@ -36,13 +38,18 @@ fun SettingsView(
         }
     }
 
-    // coleta evento que indica conclusão da mudança e aí recria a Activity
     LaunchedEffect(viewModel) {
         viewModel.events.collect {
-        ActivityEvents.recreateMain.tryEmit(Unit)
             (context as? Activity)?.apply {
-                setResult(Activity.RESULT_OK)
-                recreate()
+
+                val mainIntent = Intent(this, MainActivity::class.java)
+                val settingsIntent = Intent(this, SettingsActivity::class.java)
+
+                val options = ActivityOptions.makeCustomAnimation(this, 0, 0)
+
+                startActivities(arrayOf(mainIntent, settingsIntent), options.toBundle())
+
+                finishAffinity()
             }
         }
     }

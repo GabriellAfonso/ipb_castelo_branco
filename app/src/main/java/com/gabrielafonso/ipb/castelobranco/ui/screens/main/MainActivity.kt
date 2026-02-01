@@ -11,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.launch
-import com.gabrielafonso.ipb.castelobranco.util.ActivityEvents
 import kotlinx.coroutines.flow.collect
 
 @AndroidEntryPoint
@@ -24,14 +23,6 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // escuta evento global e recria a própria MainActivity quando recebido
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                ActivityEvents.recreateMain.collect {
-                    recreate()
-                }
-            }
-        }
     }
 
     @Composable
