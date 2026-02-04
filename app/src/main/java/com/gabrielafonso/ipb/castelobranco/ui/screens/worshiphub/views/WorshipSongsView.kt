@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -99,49 +100,50 @@ fun WorshipSongsTableScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    containerColor = barColor,
-                    contentColor = Color.Black,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                            color = indicatorColor,
-                            height = 3.dp
-                        )
-                    },
-                    divider = {}
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        val isSingleWord = !title.contains(" ")
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = barColor,
+                contentColor = Color.Black,
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = indicatorColor,
+                        height = 3.dp
+                    )
+                },
+                divider = {}
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    val isSingleWord = !title.contains(" ")
 
-                        Tab(
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
-                            text = {
-                                Text(
-                                    text = title,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 13.sp,
-                                    softWrap = !isSingleWord,
-                                    maxLines = if (isSingleWord) 1 else 2,
-                                )
-                            }
-                        )
-                    }
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = {
+                            Text(
+                                text = title,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 13.sp,
+                                softWrap = !isSingleWord,
+                                maxLines = if (isSingleWord) 1 else 2,
+                            )
+                        }
+                    )
+                }
 
 
             }
-
-            when (selectedTabIndex) {
-                0 -> LastSundaysTab(sundays = state.sundays)
-                1 -> TopSongsTab(topSongs = state.topSongs)
-                2 -> TopTonesTab(topTones = state.topTones)
-                3 -> SuggestionsTab(
-                    suggestedSongs = state.suggestedSongs,
-                    isRefreshing = state.isRefreshingSuggestions,
-                    onRefreshClick = actions.onRefreshSuggestions
-                )
+            SelectionContainer {
+                when (selectedTabIndex) {
+                    0 -> LastSundaysTab(sundays = state.sundays)
+                    1 -> TopSongsTab(topSongs = state.topSongs)
+                    2 -> TopTonesTab(topTones = state.topTones)
+                    3 -> SuggestionsTab(
+                        suggestedSongs = state.suggestedSongs,
+                        isRefreshing = state.isRefreshingSuggestions,
+                        onRefreshClick = actions.onRefreshSuggestions
+                    )
+                }
             }
         }
     }

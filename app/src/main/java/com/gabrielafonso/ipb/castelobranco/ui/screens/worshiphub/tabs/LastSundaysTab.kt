@@ -57,6 +57,7 @@ fun LastSundaysTab(sundays: List<SundaySet>) {
 
 @Composable
 fun SundaySection(sunday: SundaySet) {
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -66,7 +67,6 @@ fun SundaySection(sunday: SundaySet) {
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
-
         ) {
             Text(
                 text = sunday.date,

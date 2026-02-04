@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -14,9 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -31,18 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import com.gabrielafonso.ipb.castelobranco.domain.model.Hymn
 import com.gabrielafonso.ipb.castelobranco.domain.model.HymnLyric
 import com.gabrielafonso.ipb.castelobranco.domain.model.HymnLyricType
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
-
-
-
 
 @Composable
 fun HymnDetailView(
@@ -67,8 +59,6 @@ fun HymnDetailScreen(
     hymn: Hymn?,
     onBack: () -> Unit
 ) {
-
-    val pageBg = Color(0xFFE9E9E9)
     val headerGreen = Color(0xFF0F6B5C)
 
     BaseScreen(
@@ -77,40 +67,35 @@ fun HymnDetailScreen(
         onBackClick = onBack,
         containerColor = MaterialTheme.colorScheme.surfaceDim
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (hymn == null) {
-                Text(
-                    text = "Hino não encontrado",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = headerGreen,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                return@BaseScreen
-            }
-
+        if (hymn == null) {
             Text(
-                text = "${hymn.number} \u2022 ${hymn.title}",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                text = "Hino não encontrado",
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
                 color = headerGreen,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.titleMedium
             )
+            return@BaseScreen
+        }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        SelectionContainer {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                itemsIndexed(
-                    items = hymn.lyrics,
-                    key = { index, _ -> "${hymn.number}-$index" }
-                ) { _, lyric ->
+                Text(
+                    text = "${hymn.number} \u2022 ${hymn.title}",
+                    color = headerGreen,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+
+                hymn.lyrics.forEach { lyric ->
                     LyricCard(
                         lyric = lyric,
                         fontSizeSp = 22f
