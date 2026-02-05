@@ -1,5 +1,6 @@
 package com.gabrielafonso.ipb.castelobranco.ui.screens.auth
 
+import android.app.Activity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,9 @@ import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import com.gabrielafonso.ipb.castelobranco.ui.screens.main.goToMainAsRoot
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +54,20 @@ fun RegisterView(
         if (registerErrors != RegisterErrors()) {
             kotlinx.coroutines.delay(5000)
             viewModel.clearRegisterErrors()
+        }
+    }
+
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is AuthViewModel.AuthEvent.RegisterSuccess -> {
+                    val msg = "Conta criada com sucesso"
+                    (context as? Activity)?.goToMainAsRoot(message = msg)
+                }
+                else -> {}
+            }
         }
     }
 
