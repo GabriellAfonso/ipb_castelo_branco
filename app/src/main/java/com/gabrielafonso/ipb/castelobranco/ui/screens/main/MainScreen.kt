@@ -1,46 +1,58 @@
+// app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/main/MainScreen.kt
 package com.gabrielafonso.ipb.castelobranco.ui.screens.main
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 import com.gabrielafonso.ipb.castelobranco.R
-import com.gabrielafonso.ipb.castelobranco.ui.components.Highlight
 import com.gabrielafonso.ipb.castelobranco.ui.components.CustomButton
-import com.gabrielafonso.ipb.castelobranco.ui.components.ThemeToggle
+import com.gabrielafonso.ipb.castelobranco.ui.components.Highlight
 import com.gabrielafonso.ipb.castelobranco.ui.screens.auth.AuthActivity
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
-import com.gabrielafonso.ipb.castelobranco.ui.screens.hymnal.HymnalActions
 import com.gabrielafonso.ipb.castelobranco.ui.screens.hymnal.HymnalActivity
-import com.gabrielafonso.ipb.castelobranco.ui.screens.hymnal.HymnalScreen
-import com.gabrielafonso.ipb.castelobranco.ui.screens.hymnal.HymnalViewModel
 import com.gabrielafonso.ipb.castelobranco.ui.screens.monthschedule.MonthScheduleActivity
 import com.gabrielafonso.ipb.castelobranco.ui.screens.settings.SettingsActivity
 import com.gabrielafonso.ipb.castelobranco.ui.screens.worshiphub.WorshipHubActivity
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
-fun NavigationDrawer(actions: MainActions, content: @Composable (openDrawer: () -> Unit) -> Unit) {
+fun NavigationDrawer(
+    actions: MainActions,
+    isLoggedIn: Boolean,
+    onLogout: () -> Unit,
+    content: @Composable (openDrawer: () -> Unit) -> Unit
+) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -48,8 +60,11 @@ fun NavigationDrawer(actions: MainActions, content: @Composable (openDrawer: () 
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.8f)) {
-                // passa uma função que fecha a drawer e então executa a ação
-                DrawerContent(actions) { action ->
+                DrawerContent(
+                    actions = actions,
+                    isLoggedIn = isLoggedIn,
+                    onLogout = onLogout
+                ) { action ->
                     scope.launch {
                         drawerState.close()
                         action()
@@ -57,38 +72,49 @@ fun NavigationDrawer(actions: MainActions, content: @Composable (openDrawer: () 
                 }
             }
         },
-        content = {
-            content { scope.launch { drawerState.open() } }
-        }
+        content = { content { scope.launch { drawerState.open() } } }
     )
 }
 
-
 @Composable
 fun MainView(
-    viewModel: MainViewModel = hiltViewModel(),
-
+    viewModel: MainViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val actions = remember(context) { MainActions(context) }
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
 
-    val actions =  remember(context) { MainActions(context) }
 
-
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                is MainViewModel.MainEvent.LogoutSuccess -> {
+                    (context as? Activity)?.goToMainAsRoot(message = "Você saiu da conta")
+                }
+            }
+        }
+    }
     MainScreen(
         actions = actions,
-
+        isLoggedIn = isLoggedIn,
+        onLogout = viewModel::logout
     )
 }
 
 @Composable
 fun MainScreen(
-    actions: MainActions
+    actions: MainActions,
+    isLoggedIn: Boolean,
+    onLogout: () -> Unit
 ) {
-
-    NavigationDrawer(actions) { openDrawer ->
+    NavigationDrawer(
+        actions = actions,
+        isLoggedIn = isLoggedIn,
+        onLogout = onLogout
+    ) { openDrawer ->
         BaseScreen(
             tabName = "IPB Castelo Branco",
-            onMenuClick = openDrawer // aqui o botão do TopBar chama openDrawer
+            onMenuClick = openDrawer
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -97,18 +123,16 @@ fun MainScreen(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Spacer(modifier = Modifier.height(60.dp))
                 Highlight()
                 Spacer(modifier = Modifier.height(60.dp))
-
                 ButtonGrid(actions = actions)
             }
         }
     }
 }
-class MainActions(private val context: Context) {
 
+class MainActions(private val context: Context) {
     fun openWorshipHub() = openActivity(WorshipHubActivity::class.java)
     fun openSchedule() = openActivity(MonthScheduleActivity::class.java)
     fun openHymnal() = openActivity(HymnalActivity::class.java)
@@ -137,7 +161,7 @@ fun ButtonGrid(actions: MainActions) {
             ButtonInfo(R.drawable.calendar_icon, "Escala", iconColor, actions::openSchedule),
             ButtonInfo(R.drawable.gallery_icon, "Galeria", iconColor) { println("Galeria clicked") },
             ButtonInfo(R.drawable.sarca_ipb, "Hinário", iconColor, actions::openHymnal),
-            ButtonInfo(R.drawable.sarca_ipb, "Exemplo", iconColor) { println("Sample 1 clicked") },
+            ButtonInfo(R.drawable.sarca_ipb, "Exemplo", iconColor) { },
             ButtonInfo(R.drawable.sarca_ipb, "Exemplo", iconColor) { println("Sample 2 clicked") }
         )
     }
@@ -165,38 +189,32 @@ private fun ButtonRow(rowButtons: List<ButtonInfo>) {
     }
 }
 
-//@Composable
-//fun NavigationDrawer(content: @Composable () -> Unit) {
-//    val drawerState = rememberDrawerState(DrawerValue.Closed)
-//
-//    ModalNavigationDrawer(
-//        drawerState = drawerState,
-//        drawerContent = {
-//            ModalDrawerSheet {
-//                DrawerContent()
-//            }
-//        },
-//        content = content
-//    )
-//}
 @Composable
-fun DrawerContent(actions: MainActions, onItemClick: (action: () -> Unit) -> Unit) {
+fun DrawerContent(
+    actions: MainActions,
+    isLoggedIn: Boolean,
+    onLogout: () -> Unit,
+    onItemClick: (action: () -> Unit) -> Unit
+) {
     val textColor = MaterialTheme.colorScheme.onSurface
 
     Column(modifier = Modifier.padding(16.dp)) {
-        TextButton(
-            onClick = { onItemClick { actions.openAuth() } },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = ButtonDefaults.textButtonColors(contentColor = textColor)
-        ) {
-            Text(
-                "Entrar",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Start,
-                color = textColor
-            )
+
+        if (!isLoggedIn) {
+            TextButton(
+                onClick = { onItemClick { actions.openAuth() } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = textColor)
+            ) {
+                Text(
+                    "Entrar",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = textColor
+                )
+            }
         }
 
         TextButton(
@@ -227,6 +245,23 @@ fun DrawerContent(actions: MainActions, onItemClick: (action: () -> Unit) -> Uni
                 textAlign = TextAlign.Start,
                 color = textColor
             )
+        }
+
+        if (isLoggedIn) {
+            TextButton(
+                onClick = { onItemClick { onLogout() } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = textColor)
+            ) {
+                Text(
+                    "Logout",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start,
+                    color = textColor
+                )
+            }
         }
     }
 }
