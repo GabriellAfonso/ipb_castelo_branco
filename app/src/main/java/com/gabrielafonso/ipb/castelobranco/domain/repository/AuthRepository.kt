@@ -1,9 +1,9 @@
 package com.gabrielafonso.ipb.castelobranco.domain.repository
 
-import com.gabrielafonso.ipb.castelobranco.domain.model.AuthResponse
+import com.gabrielafonso.ipb.castelobranco.domain.model.AuthTokens
 
 interface AuthRepository {
-    suspend fun signIn(username: String, password: String): Result<AuthResponse>
+    suspend fun signIn(username: String, password: String): Result<AuthTokens>
     fun getAuthToken(): String?
     suspend fun signOut()
     suspend fun signUp(
@@ -12,5 +12,5 @@ interface AuthRepository {
         lastName: String,
         password: String,
         passwordConfirm: String
-    ): Result<AuthResponse>
+    ): Result<AuthTokens>
 }
