@@ -5,8 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -31,6 +35,14 @@ class AuthViewModel @Inject constructor(
         private const val TAG = "AuthViewModel"
     }
 
+    sealed class AuthEvent {
+        data object RegisterSuccess : AuthEvent()
+        data object LoginSuccess : AuthEvent()
+    }
+
+    private val _events = MutableSharedFlow<AuthEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<AuthEvent> = _events.asSharedFlow()
+
     private val _loginError = MutableStateFlow<String?>(null)
     val loginError: StateFlow<String?> = _loginError.asStateFlow()
 
@@ -52,12 +64,18 @@ class AuthViewModel @Inject constructor(
                 val result = repository.signIn(username, password)
                 result.onSuccess { authResponse ->
                     Log.d(TAG, "Login sucesso: $authResponse")
+
+                    fetchUserDataAfterRegister()
+
+                    _events.tryEmit(AuthEvent.LoginSuccess)
                 }.onFailure { throwable ->
-                    _loginError.value = throwable.message ?: "Erro ao fazer login"
+                    val raw = throwable.message ?: "Erro ao fazer login"
+                    _loginError.value = parseLoginError(raw)
                     Log.e(TAG, "Falha no login", throwable)
                 }
             } catch (e: Exception) {
-                _loginError.value = e.message ?: "Erro inesperado"
+                val raw = e.message ?: "Erro inesperado"
+                _loginError.value = parseLoginError(raw)
                 Log.e(TAG, "Erro inesperado no login", e)
             }
         }
@@ -76,6 +94,10 @@ class AuthViewModel @Inject constructor(
                 val result = repository.signUp(username, firstName, lastName, password, passwordConfirm)
                 result.onSuccess { authResponse ->
                     Log.d(TAG, "Registro sucesso: $authResponse")
+
+                    fetchUserDataAfterRegister()
+
+                    _events.tryEmit(AuthEvent.RegisterSuccess)
                 }.onFailure { throwable ->
                     val message = throwable.message ?: "Erro ao registrar"
                     _registerErrors.value = parseRegisterError(message)
@@ -88,10 +110,50 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private suspend fun fetchUserDataAfterRegister() {
+        delay(600)
+    }
+
+    private fun parseLoginError(message: String): String {
+        return try {
+            val trimmed = message.trim()
+            if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return message
+
+            val json = JSONObject(trimmed)
+
+            // padrões comuns de API
+            val keysPriority = listOf("detail", "message", "error", "non_field_errors")
+            for (k in keysPriority) {
+                if (json.has(k)) return jsonValueToMessage(json.get(k))
+            }
+
+            // fallback: pega o primeiro campo disponível
+            val keys = json.keys()
+            if (keys.hasNext()) {
+                val k = keys.next()
+                return jsonValueToMessage(json.get(k))
+            }
+
+            message
+        } catch (_: Exception) {
+            message
+        }
+    }
+
+    private fun jsonValueToMessage(value: Any?): String {
+        return when (value) {
+            is JSONArray -> when {
+                value.length() > 0 -> value.optString(0, value.toString())
+                else -> value.toString()
+            }
+            is JSONObject -> value.optString("detail", value.toString())
+            else -> value?.toString().orEmpty().ifBlank { "Erro ao fazer login" }
+        }
+    }
+
     private fun parseRegisterError(message: String): RegisterErrors {
         return try {
             val trimmed = message.trim()
-            // tenta interpretar como JSON objeto { field: [ "msg" ] } ou { "detail": ["..."] }
             if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
                 return RegisterErrors(general = message)
             }
@@ -120,7 +182,7 @@ class AuthViewModel @Inject constructor(
             }
 
             if (errors == RegisterErrors()) RegisterErrors(general = message) else errors
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             RegisterErrors(general = message)
         }
     }
