@@ -92,12 +92,12 @@ dependencies {
 
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:3.0.0")
+    implementation(libs.converter.kotlinx.serialization)
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-compiler:2.52")
-    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
+    implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
