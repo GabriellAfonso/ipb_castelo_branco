@@ -2,13 +2,12 @@
 package com.gabrielafonso.ipb.castelobranco.data.api
 
 import com.gabrielafonso.ipb.castelobranco.core.network.Endpoints
-import com.gabrielafonso.ipb.castelobranco.domain.model.AuthResponse
+import com.gabrielafonso.ipb.castelobranco.domain.model.AuthTokens
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 interface BackendApi {
     @GET(Endpoints.SONGS_BY_SUNDAY_PATH)
@@ -44,10 +43,15 @@ interface BackendApi {
     @POST(Endpoints.AUTH_LOGIN_PATH)
     suspend fun login(
         @Body request: LoginRequest
-    ): Response<AuthResponse>
+    ): Response<AuthTokens>
 
     @POST(Endpoints.AUTH_REGISTER_PATH)
     suspend fun register(
         @Body request: RegisterRequest
-    ): Response<AuthResponse>
+    ): Response<AuthTokens>
+
+    @POST(Endpoints.AUTH_REFRESH_PATH)
+    suspend fun refresh(
+        @Body request: RefreshRequest
+    ): Response<AuthTokens>
 }
