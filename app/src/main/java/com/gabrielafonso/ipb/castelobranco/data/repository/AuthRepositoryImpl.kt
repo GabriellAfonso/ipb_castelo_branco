@@ -6,6 +6,7 @@ import com.gabrielafonso.ipb.castelobranco.data.api.RegisterRequest
 import com.gabrielafonso.ipb.castelobranco.data.local.JsonSnapshotStorage
 import com.gabrielafonso.ipb.castelobranco.domain.model.AuthResponse
 import com.gabrielafonso.ipb.castelobranco.domain.repository.AuthRepository
+import com.gabrielafonso.ipb.castelobranco.ui.screens.auth.RegisterErrors
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,14 +32,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun signUp(username: String, password: String, passwordConfirm: String): Result<AuthResponse> {
-        return try {
-            val response = api.register(RegisterRequest(username, password, passwordConfirm))
-            handleAuthResponse(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     private suspend fun handleAuthResponse(response: Response<AuthResponse>): Result<AuthResponse> {
         return if (response.isSuccessful) {
@@ -51,7 +44,32 @@ class AuthRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Token ausente"))
             }
         } else {
-            Result.failure(Exception("HTTP ${response.code()}"))
+            val errorBody = response.errorBody()?.string()
+            Result.failure(Exception(errorBody ?: "HTTP ${response.code()}"))
+        }
+    }
+  
+
+    override suspend fun signUp(
+        username: String,
+        firstName: String,
+        lastName: String,
+        password: String,
+        passwordConfirm: String
+    ): Result<AuthResponse> {
+        return try {
+            val response = api.register(
+                RegisterRequest(
+                    username = username,
+                    firstName = firstName,
+                    lastName = lastName,
+                    password = password,
+                    passwordConfirm = passwordConfirm
+                )
+            )
+            handleAuthResponse(response)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
