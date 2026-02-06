@@ -1,16 +1,14 @@
 // app/src/main/java/com/gabrielafonso/ipb/castelobranco/data/local/TokenStorage.kt
 package com.gabrielafonso.ipb.castelobranco.data.local
 
-import android.content.Context
-import androidx.core.content.edit
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-
 import com.gabrielafonso.ipb.castelobranco.domain.model.AuthTokens
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -22,10 +20,15 @@ class TokenStorage @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val json: Json
 ) {
-
     private object Keys {
         val TOKENS = stringPreferencesKey("auth_tokens")
     }
+
+    val tokensFlow: Flow<AuthTokens?> =
+        dataStore.data.map { prefs ->
+            val raw = prefs[Keys.TOKENS] ?: return@map null
+            runCatching { json.decodeFromString<AuthTokens>(raw) }.getOrNull()
+        }
 
     suspend fun save(tokens: AuthTokens) {
         dataStore.edit { prefs ->
@@ -34,9 +37,7 @@ class TokenStorage @Inject constructor(
     }
 
     suspend fun loadOrNull(): AuthTokens? {
-        val prefs = dataStore.data.first()
-        val raw = prefs[Keys.TOKENS] ?: return null
-        return runCatching { json.decodeFromString<AuthTokens>(raw) }.getOrNull()
+        return tokensFlow.first()
     }
 
     suspend fun clear() {
