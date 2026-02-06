@@ -9,7 +9,7 @@ object Endpoints {
 
     const val HYMNAL_PATH = "${ApiConstants.BASE_PATH}hymnal/"
 
-    const val GENERATE_SCHEDULE_PATH = "${ApiConstants.BASE_PATH}generate-schedule/"
+    const val CURRENT_SCHEDULE = "${ApiConstants.BASE_PATH}schedule/current/"
 
     const val AUTH_LOGIN_PATH = "${ApiConstants.BASE_PATH}auth/login/"
     const val AUTH_REGISTER_PATH = "${ApiConstants.BASE_PATH}auth/register/"
