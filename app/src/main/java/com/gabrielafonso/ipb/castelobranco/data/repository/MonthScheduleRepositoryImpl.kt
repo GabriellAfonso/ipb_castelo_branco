@@ -1,4 +1,3 @@
-// kotlin
 package com.gabrielafonso.ipb.castelobranco.data.repository
 
 import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
@@ -9,6 +8,7 @@ import com.gabrielafonso.ipb.castelobranco.domain.model.MonthSchedule
 import com.gabrielafonso.ipb.castelobranco.domain.model.ScheduleEntry
 import com.gabrielafonso.ipb.castelobranco.domain.model.ScheduleItem
 import com.gabrielafonso.ipb.castelobranco.domain.repository.MonthScheduleRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -42,11 +42,11 @@ class MonthScheduleRepositoryImpl @Inject constructor(
                 month = dto.month,
                 schedule = dto.schedule.mapValues { (_, entryDto) ->
                     ScheduleEntry(
-                        time = entryDto.time.orEmpty(),
+                        time = entryDto.time,
                         items = entryDto.items.map { i ->
                             ScheduleItem(
                                 day = i.day,
-                                member = i.member
+                                member = i.member.name
                             )
                         }
                     )
@@ -54,6 +54,7 @@ class MonthScheduleRepositoryImpl @Inject constructor(
             )
     }
 
-    override fun observeMonthSchedule() = base.observeSnapshot()
-    override suspend fun refreshMonthSchedule() = base.refreshSnapshot()
+    override fun observeMonthSchedule(): Flow<MonthSchedule?> = base.observeSnapshot()
+
+    override suspend fun refreshMonthSchedule(): Boolean = base.refreshSnapshot()
 }
