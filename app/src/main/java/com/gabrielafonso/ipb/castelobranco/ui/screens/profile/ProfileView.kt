@@ -111,7 +111,8 @@ fun ProfileView(
     BaseScreen(
         tabName = "Perfil",
         showBackArrow = true,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        showAccountAction = false
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -129,7 +130,9 @@ fun ProfileView(
             val bitmap = remember(localPhotoVersion, photoFile?.absolutePath) {
                 photoFile?.absolutePath?.let { BitmapFactory.decodeFile(it) }
             }
+
             Spacer(Modifier.height(70.dp))
+
             Box(
                 modifier = Modifier
                     .size(140.dp)
