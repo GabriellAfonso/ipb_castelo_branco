@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.data.local.AuthSession
 import com.gabrielafonso.ipb.castelobranco.domain.repository.HymnalRepository
 import com.gabrielafonso.ipb.castelobranco.domain.repository.MonthScheduleRepository
+import com.gabrielafonso.ipb.castelobranco.domain.repository.ProfileRepository
 import com.gabrielafonso.ipb.castelobranco.domain.repository.SongsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +25,8 @@ class MainViewModel @Inject constructor(
     private val repository: SongsRepository,
     private val hymnalRepository: HymnalRepository,
     private val monthScheduleRepository: MonthScheduleRepository,
-    private val authSession: AuthSession
+    private val authSession: AuthSession,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     sealed interface MainEvent {
@@ -41,17 +43,17 @@ class MainViewModel @Inject constructor(
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     init {
-        // Em vez de chamar refresh em pontos soltos, a UI segue o DataStore
         viewModelScope.launch {
             authSession.isLoggedInFlow.collect { logged ->
                 _isLoggedIn.value = logged
             }
         }
+
         preload()
+        refreshProfileOnAppOpen()
     }
 
     fun refreshLoginState() {
-        // Pode manter para uso pontual, mas não é mais necessário
         viewModelScope.launch {
             _isLoggedIn.value = authSession.isLoggedIn()
         }
@@ -60,8 +62,23 @@ class MainViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             authSession.logout()
-            // isLoggedInFlow vai emitir false automaticamente
             _events.trySend(MainEvent.LogoutSuccess)
+        }
+    }
+
+    private fun refreshProfileOnAppOpen() {
+        viewModelScope.launch {
+            // Só tenta buscar perfil/foto se já estiver logado
+            if (!authSession.isLoggedIn()) return@launch
+
+            runCatching {
+                val profile = profileRepository.getMeProfile().getOrThrow()
+                val url = profile.photoUrl
+                if (!url.isNullOrBlank()) {
+                    // 404 \=\> success(null)
+                    profileRepository.downloadAndPersistProfilePhoto(url).getOrThrow()
+                }
+            }
         }
     }
 
