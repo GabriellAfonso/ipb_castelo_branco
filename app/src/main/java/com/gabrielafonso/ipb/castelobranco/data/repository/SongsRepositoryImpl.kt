@@ -91,7 +91,12 @@ class SongsRepositoryImpl @Inject constructor(
         dtoListSerializer = ListSerializer(SuggestedSongDto.serializer()),
         key = KEY_SUGGESTED_SONGS,
         tag = "observeSuggestedSongs",
-        fetchNetwork = { ifNoneMatch -> api.getSuggestedSongs(ifNoneMatch) }
+        // IMPORTANTE: impedir que o observe faça GET "solto" por trás
+        fetchNetwork = { _ ->
+            throw IllegalStateException(
+                "Não buscar rede em observeSuggestedSongs(). Use refreshSuggestedSongs(fixedByPosition)."
+            )
+        }
     ) {
         override fun mapToDomain(dto: List<SuggestedSongDto>): List<SuggestedSong> =
             dto.map { s ->
@@ -117,5 +122,36 @@ class SongsRepositoryImpl @Inject constructor(
     override suspend fun refreshTopTones() = topTonesRepo.refreshSnapshotList()
 
     override fun observeSuggestedSongs() = suggestedRepo.observeSnapshotList()
-    override suspend fun refreshSuggestedSongs() = suggestedRepo.refreshSnapshotList()
+
+    override suspend fun refreshSuggestedSongs(): Boolean {
+        return refreshSuggestedSongs(emptyMap())
+    }
+    override suspend fun refreshSuggestedSongs(fixedByPosition: Map<Int, Int>): Boolean {
+        val fixedParam = fixedByPosition
+            .toList()
+            .sortedBy { (pos, _) -> pos }
+            .joinToString(separator = ",") { (pos, playedId) -> "$pos:$playedId" }
+
+        val response = api.getSuggestedSongs(
+            ifNoneMatch = null,
+            fixed = fixedParam.ifBlank { null }
+        )
+        if (!response.isSuccessful) return false
+
+        val body = response.body() ?: return false
+
+        val rawDtoJson = json.encodeToString(
+            ListSerializer(SuggestedSongDto.serializer()),
+            body
+        )
+        jsonStorage.save(KEY_SUGGESTED_SONGS, rawDtoJson)
+
+        val newETag = response.headers()["ETag"]?.trim()
+        if (!newETag.isNullOrBlank()) {
+            jsonStorage.saveETag(KEY_SUGGESTED_SONGS, newETag)
+        }
+
+        suggestedRepo.refreshSnapshotList()
+        return true
+    }
 }
