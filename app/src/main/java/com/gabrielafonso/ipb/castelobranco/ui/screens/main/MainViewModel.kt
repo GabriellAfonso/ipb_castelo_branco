@@ -1,7 +1,5 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/main/MainViewModel.kt
 package com.gabrielafonso.ipb.castelobranco.ui.screens.main
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.data.local.AuthSession
@@ -29,14 +27,13 @@ class MainViewModel @Inject constructor(
     private val authSession: AuthSession
 ) : ViewModel() {
 
-    companion object {
-        private const val TAG = "MainViewModel"
-    }
     sealed interface MainEvent {
         data object LogoutSuccess : MainEvent
     }
+
     private val _events = Channel<MainEvent>(capacity = Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
     private val _isPreloading = MutableStateFlow(false)
     val isPreloading: StateFlow<Boolean> = _isPreloading.asStateFlow()
 
@@ -44,11 +41,17 @@ class MainViewModel @Inject constructor(
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
     init {
-        refreshLoginState()
+        // Em vez de chamar refresh em pontos soltos, a UI segue o DataStore
+        viewModelScope.launch {
+            authSession.isLoggedInFlow.collect { logged ->
+                _isLoggedIn.value = logged
+            }
+        }
         preload()
     }
 
     fun refreshLoginState() {
+        // Pode manter para uso pontual, mas não é mais necessário
         viewModelScope.launch {
             _isLoggedIn.value = authSession.isLoggedIn()
         }
@@ -57,7 +60,7 @@ class MainViewModel @Inject constructor(
     fun logout() {
         viewModelScope.launch {
             authSession.logout()
-            _isLoggedIn.value = false
+            // isLoggedInFlow vai emitir false automaticamente
             _events.trySend(MainEvent.LogoutSuccess)
         }
     }
@@ -78,17 +81,10 @@ class MainViewModel @Inject constructor(
                         )
 
                         jobs.forEach { deferred ->
-                            try {
-                                val (ok, name) = deferred.await()
-                                if (!ok) Log.w(TAG, "$name falhou") else Log.d(TAG, "$name sucesso")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Erro ao executar refresh paralelo", e)
-                            }
+                            runCatching { deferred.await() }
                         }
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "preload geral falhou", e)
             } finally {
                 _isPreloading.value = false
             }
