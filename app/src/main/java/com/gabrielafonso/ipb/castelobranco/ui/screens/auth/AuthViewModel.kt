@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.domain.repository.AuthRepository
+import com.gabrielafonso.ipb.castelobranco.domain.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,7 +29,8 @@ data class RegisterErrors(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     companion object {
@@ -65,7 +67,12 @@ class AuthViewModel @Inject constructor(
                 result.onSuccess { authResponse ->
                     Log.d(TAG, "Login sucesso: $authResponse")
 
-                    fetchUserDataAfterRegister()
+                    // Busca perfil \+ baixa/persiste foto antes de navegar
+                    val ok = fetchUserData()
+                    if (!ok) {
+                        _loginError.value = "Falha ao carregar dados do usuário"
+                        return@onSuccess
+                    }
 
                     _events.tryEmit(AuthEvent.LoginSuccess)
                 }.onFailure { throwable ->
@@ -95,7 +102,11 @@ class AuthViewModel @Inject constructor(
                 result.onSuccess { authResponse ->
                     Log.d(TAG, "Registro sucesso: $authResponse")
 
-                    fetchUserDataAfterRegister()
+                    val ok = fetchUserData()
+                    if (!ok) {
+                        _registerErrors.value = RegisterErrors(general = "Falha ao carregar dados do usuário")
+                        return@onSuccess
+                    }
 
                     _events.tryEmit(AuthEvent.RegisterSuccess)
                 }.onFailure { throwable ->
@@ -110,8 +121,20 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchUserDataAfterRegister() {
-        delay(600)
+    private suspend fun fetchUserData(): Boolean {
+        return try {
+            val profile = profileRepository.getMeProfile().getOrThrow()
+
+            val photoUrl = profile.photoUrl
+            if (!photoUrl.isNullOrBlank()) {
+                profileRepository.downloadAndPersistProfilePhoto(photoUrl).getOrThrow()
+            }
+
+            true
+        } catch (t: Throwable) {
+            Log.e(TAG, "Falha ao buscar dados do usuário", t)
+            false
+        }
     }
 
     private fun parseLoginError(message: String): String {
@@ -121,13 +144,11 @@ class AuthViewModel @Inject constructor(
 
             val json = JSONObject(trimmed)
 
-            // padrões comuns de API
             val keysPriority = listOf("detail", "message", "error", "non_field_errors")
             for (k in keysPriority) {
                 if (json.has(k)) return jsonValueToMessage(json.get(k))
             }
 
-            // fallback: pega o primeiro campo disponível
             val keys = json.keys()
             if (keys.hasNext()) {
                 val k = keys.next()
