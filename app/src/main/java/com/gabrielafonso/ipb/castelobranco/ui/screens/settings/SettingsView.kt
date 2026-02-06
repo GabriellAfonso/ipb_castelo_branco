@@ -74,7 +74,8 @@ fun SettingsScreen(
         tabName = "Configurações",
         logoRes =  R.drawable.sarca_ipb,
         showBackArrow = true,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        showAccountAction = false
     ) { innerPadding ->
         Column(
             modifier = Modifier
