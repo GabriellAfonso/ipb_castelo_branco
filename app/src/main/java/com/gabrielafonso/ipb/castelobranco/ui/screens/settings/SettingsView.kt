@@ -11,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.appcompat.app.AppCompatDelegate
@@ -21,7 +20,6 @@ import com.gabrielafonso.ipb.castelobranco.ui.components.ThemeToggle
 import com.gabrielafonso.ipb.castelobranco.ui.screens.base.BaseScreen
 import com.gabrielafonso.ipb.castelobranco.ui.screens.main.MainActivity
 import com.gabrielafonso.ipb.castelobranco.ui.settings.SettingsViewModel
-import kotlinx.coroutines.flow.collect
 
 @Composable
 fun SettingsView(
@@ -72,7 +70,7 @@ fun SettingsScreen(
 ) {
     BaseScreen(
         tabName = "Configurações",
-        logoRes =  R.drawable.sarca_ipb,
+        logoRes =  R.drawable.ic_sarca_ipb,
         showBackArrow = true,
         onBackClick = onBackClick,
         showAccountAction = false
