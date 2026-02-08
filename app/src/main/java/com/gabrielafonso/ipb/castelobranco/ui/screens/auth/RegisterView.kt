@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.ui.screens.main.goToMainAsRoot
 import kotlinx.coroutines.flow.collectLatest
 
@@ -73,8 +74,10 @@ fun RegisterView(
 
     BaseScreen(
         tabName = "Registro",
+        logoRes = R.drawable.ic_auth_register,
         showBackArrow = true,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        showAccountAction = false
     ) { innerPadding ->
         Column(
             modifier = Modifier
