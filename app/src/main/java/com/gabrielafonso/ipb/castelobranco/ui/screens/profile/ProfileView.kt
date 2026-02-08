@@ -110,6 +110,7 @@ fun ProfileView(
 
     BaseScreen(
         tabName = "Perfil",
+        logoRes = R.drawable.ic_profile,
         showBackArrow = true,
         onBackClick = onBackClick,
         showAccountAction = false
