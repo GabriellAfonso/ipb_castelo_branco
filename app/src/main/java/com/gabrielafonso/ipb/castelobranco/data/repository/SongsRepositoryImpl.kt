@@ -1,22 +1,29 @@
 // app/src/main/java/com/gabrielafonso/ipb/castelobranco/data/repository/SongsRepositoryImpl.kt
 package com.gabrielafonso.ipb.castelobranco.data.repository
 
+import com.gabrielafonso.ipb.castelobranco.data.api.AllSongDto
 import com.gabrielafonso.ipb.castelobranco.data.api.BackendApi
+import com.gabrielafonso.ipb.castelobranco.data.api.RegisterSundayPlayItemDto
+import com.gabrielafonso.ipb.castelobranco.data.api.RegisterSundayPlaysRequestDto
 import com.gabrielafonso.ipb.castelobranco.data.api.SongsBySundayDto
 import com.gabrielafonso.ipb.castelobranco.data.api.SuggestedSongDto
 import com.gabrielafonso.ipb.castelobranco.data.api.TopSongDto
 import com.gabrielafonso.ipb.castelobranco.data.api.TopToneDto
 import com.gabrielafonso.ipb.castelobranco.data.local.JsonSnapshotStorage
 import com.gabrielafonso.ipb.castelobranco.data.repository.base.BaseListSnapshotRepository
+import com.gabrielafonso.ipb.castelobranco.domain.model.Song
 import com.gabrielafonso.ipb.castelobranco.domain.model.SuggestedSong
+import com.gabrielafonso.ipb.castelobranco.domain.model.SundayPlayPushItem
 import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySet
 import com.gabrielafonso.ipb.castelobranco.domain.model.SundaySetItem
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopSong
 import com.gabrielafonso.ipb.castelobranco.domain.model.TopTone
 import com.gabrielafonso.ipb.castelobranco.domain.repository.SongsRepository
+import javax.inject.Inject
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class SongsRepositoryImpl @Inject constructor(
     private val api: BackendApi,
@@ -28,6 +35,7 @@ class SongsRepositoryImpl @Inject constructor(
         private const val KEY_TOP_SONGS = "top_songs"
         private const val KEY_TOP_TONES = "top_tones"
         private const val KEY_SUGGESTED_SONGS = "suggested_songs"
+        private const val KEY_ALL_SONGS = "all_songs"
     }
 
     private val json = Json {
@@ -91,7 +99,6 @@ class SongsRepositoryImpl @Inject constructor(
         dtoListSerializer = ListSerializer(SuggestedSongDto.serializer()),
         key = KEY_SUGGESTED_SONGS,
         tag = "observeSuggestedSongs",
-        // IMPORTANTE: impedir que o observe faça GET "solto" por trás
         fetchNetwork = { _ ->
             throw IllegalStateException(
                 "Não buscar rede em observeSuggestedSongs(). Use refreshSuggestedSongs(fixedByPosition)."
@@ -112,6 +119,18 @@ class SongsRepositoryImpl @Inject constructor(
             }.sortedBy { it.position }
     }
 
+    private val allSongsRepo = object : BaseListSnapshotRepository<AllSongDto, Song>(
+        json = json,
+        jsonStorage = jsonStorage,
+        dtoListSerializer = ListSerializer(AllSongDto.serializer()),
+        key = KEY_ALL_SONGS,
+        tag = "observeAllSongs",
+        fetchNetwork = { ifNoneMatch -> api.getAllSongs(ifNoneMatch) }
+    ) {
+        override fun mapToDomain(dto: List<AllSongDto>): List<Song> =
+            dto.map { Song(id = it.id, title = it.title, artist = it.artist, categoryName = it.categoryName) }
+    }
+
     override fun observeSongsBySunday() = songsBySundayRepo.observeSnapshotList()
     override suspend fun refreshSongsBySunday() = songsBySundayRepo.refreshSnapshotList()
 
@@ -123,9 +142,8 @@ class SongsRepositoryImpl @Inject constructor(
 
     override fun observeSuggestedSongs() = suggestedRepo.observeSnapshotList()
 
-    override suspend fun refreshSuggestedSongs(): Boolean {
-        return refreshSuggestedSongs(emptyMap())
-    }
+    override suspend fun refreshSuggestedSongs(): Boolean = refreshSuggestedSongs(emptyMap())
+
     override suspend fun refreshSuggestedSongs(fixedByPosition: Map<Int, Int>): Boolean {
         val fixedParam = fixedByPosition
             .toList()
@@ -153,5 +171,44 @@ class SongsRepositoryImpl @Inject constructor(
 
         suggestedRepo.refreshSnapshotList()
         return true
+    }
+
+    override fun observeAllSongs() = allSongsRepo.observeSnapshotList()
+    override suspend fun refreshAllSongs() = allSongsRepo.refreshSnapshotList()
+
+    override suspend fun pushSundayPlays(
+        date: String,
+        plays: List<SundayPlayPushItem>
+    ): Boolean {
+        val body = RegisterSundayPlaysRequestDto(
+            date = date,
+            plays = plays.map {
+                RegisterSundayPlayItemDto(
+                    songId = it.songId,
+                    position = it.position,
+                    tone = it.tone
+                )
+            }
+        )
+
+        val response = api.registerSundayPlays(body)
+        if (response.isSuccessful) return true
+
+        val rawError = response.errorBody()?.string()?.trim().orEmpty()
+        val message =
+            parseBackendDetail(rawError)
+                ?: rawError.takeIf { it.isNotBlank() }
+                ?: "Erro no servidor (${response.code()})."
+
+        throw IllegalStateException(message)
+    }
+
+    private fun parseBackendDetail(rawJson: String): String? {
+        if (rawJson.isBlank()) return null
+        return runCatching {
+            val el = json.parseToJsonElement(rawJson)
+            val obj = el.jsonObject
+            obj["detail"]?.jsonPrimitive?.content?.trim().takeIf { !it.isNullOrBlank() }
+        }.getOrNull()
     }
 }
