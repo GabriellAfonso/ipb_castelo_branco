@@ -16,6 +16,12 @@ import retrofit2.http.Query
 
 interface BackendApi {
 
+    @GET(Endpoints.ALL_SONGS_PATH)
+    suspend fun getAllSongs(
+        @Header("If-None-Match") ifNoneMatch: String? = null
+    ): Response<List<AllSongDto>>
+
+
     @GET(Endpoints.SONGS_BY_SUNDAY_PATH)
     suspend fun getSongsBySunday(
         @Header("If-None-Match") ifNoneMatch: String? = null
@@ -81,4 +87,10 @@ interface BackendApi {
     suspend fun getMeProfile(
         @Header("If-None-Match") ifNoneMatch: String? = null
     ): Response<MeProfileDto>
+
+    @Headers("Requires-Auth: true")
+    @POST(Endpoints.REGISTER_SUNDAY_PLAYS_PATH)
+    suspend fun registerSundayPlays(
+        @Body body: RegisterSundayPlaysRequestDto
+    ): Response<RegisterSundayPlaysResponseDto>
 }
