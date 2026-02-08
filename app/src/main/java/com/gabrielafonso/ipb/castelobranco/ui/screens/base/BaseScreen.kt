@@ -1,3 +1,4 @@
+// app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/base/BaseScreen.kt
 package com.gabrielafonso.ipb.castelobranco.ui.screens.base
 
 import android.app.Activity
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +29,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.data.local.AuthSession
+import com.gabrielafonso.ipb.castelobranco.data.local.ProfilePhotoBus
 import com.gabrielafonso.ipb.castelobranco.ui.components.TopBar
 import com.gabrielafonso.ipb.castelobranco.ui.screens.profile.ProfileActivity
 import dagger.hilt.EntryPoint
@@ -71,14 +74,14 @@ private class TopBarProfileViewModel(
     }
 
     fun bumpPhotoVersion() {
-        _profilePhotoVersion.value += 1
+        _profilePhotoVersion.value = _profilePhotoVersion.value + 1
     }
 }
 
 @Composable
 fun BaseScreen(
     tabName: String,
-    @DrawableRes logoRes: Int = R.drawable.sarca_ipb,
+    @DrawableRes logoRes: Int = R.drawable.ic_sarca_ipb,
     showBackArrow: Boolean = false,
     onMenuClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -112,8 +115,14 @@ fun BaseScreen(
     val isLoggedIn = topBarVm.isLoggedIn.collectAsStateWithLifecycle().value
     val profilePhotoVersion = topBarVm.profilePhotoVersion.collectAsStateWithLifecycle().value
 
+    val globalPhotoVersion = ProfilePhotoBus.version.collectAsStateWithLifecycle().value
+    LaunchedEffect(globalPhotoVersion) {
+        if (isLoggedIn) topBarVm.bumpPhotoVersion()
+    }
+
     val photoFile: File? = remember(isLoggedIn, profilePhotoVersion) {
         if (!isLoggedIn) return@remember null
+
         val dir = File(context.filesDir, "profile")
         if (!dir.exists()) return@remember null
 
@@ -128,19 +137,20 @@ fun BaseScreen(
     }
 
     val logo: Painter = painterResource(id = logoRes)
+    val placeholderPainter: Painter = painterResource(id = R.drawable.ic_profile_placeholder)
 
-    val accountPainter: Painter? = remember(showAccountAction, isLoggedIn, bitmap) {
-        if (!showAccountAction) return@remember null
-        if (!isLoggedIn) return@remember null
-        if (bitmap == null) return@remember null
-        BitmapPainter(bitmap.asImageBitmap())
-    }
+    val accountPainter: Painter? =
+        if (!showAccountAction) {
+            null
+        } else if (isLoggedIn && bitmap != null) {
+            BitmapPainter(bitmap.asImageBitmap())
+        } else {
+            placeholderPainter
+        }
 
     val resolvedOnAccountClick: () -> Unit = onAccountClick ?: {
         if (isLoggedIn) {
             activity.startActivity(Intent(activity, ProfileActivity::class.java))
-        } else {
-            // não faz nada
         }
     }
 
