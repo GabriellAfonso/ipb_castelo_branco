@@ -1,7 +1,7 @@
 package com.gabrielafonso.ipb.castelobranco.core.network
 
 object Endpoints {
-    // Songs / suggestions / reports
+    const val ALL_SONGS_PATH = "${ApiConstants.BASE_PATH}songs/"
     const val SONGS_BY_SUNDAY_PATH = "${ApiConstants.BASE_PATH}songs-by-sunday/"
     const val TOP_SONGS_PATH = "${ApiConstants.BASE_PATH}top-songs/"
     const val TOP_TONES_PATH = "${ApiConstants.BASE_PATH}top-tones/"
@@ -18,4 +18,5 @@ object Endpoints {
     const val ME_PROFILE_PHOTO_PATH = "${ApiConstants.BASE_PATH}me/profile/photo/"
 
     const val ME_PROFILE_PATH = "${ApiConstants.BASE_PATH}me/profile/"
+    const val REGISTER_SUNDAY_PLAYS_PATH = "${ApiConstants.BASE_PATH}played/register/"
 }
