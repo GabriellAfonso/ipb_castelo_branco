@@ -41,6 +41,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -109,6 +111,6 @@ dependencies {
     implementation (libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.ucrop)
-
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 //    implementation("com.vanniktech:android-image-cropper:4.7.0")
 }
