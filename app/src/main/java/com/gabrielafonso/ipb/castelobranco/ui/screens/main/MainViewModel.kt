@@ -1,3 +1,4 @@
+// app/src/main/java/com/gabrielafonso/ipb/castelobranco/ui/screens/main/MainViewModel.kt
 package com.gabrielafonso.ipb.castelobranco.ui.screens.main
 
 import androidx.lifecycle.ViewModel
@@ -68,14 +69,12 @@ class MainViewModel @Inject constructor(
 
     private fun refreshProfileOnAppOpen() {
         viewModelScope.launch {
-            // Só tenta buscar perfil/foto se já estiver logado
             if (!authSession.isLoggedIn()) return@launch
 
             runCatching {
                 val profile = profileRepository.getMeProfile().getOrThrow()
                 val url = profile.photoUrl
                 if (!url.isNullOrBlank()) {
-                    // 404 \=\> success(null)
                     profileRepository.downloadAndPersistProfilePhoto(url).getOrThrow()
                 }
             }
@@ -89,6 +88,7 @@ class MainViewModel @Inject constructor(
                 withContext(Dispatchers.IO) {
                     supervisorScope {
                         val jobs = listOf(
+                            async { repository.refreshAllSongs() to "refreshAllSongs" },
                             async { repository.refreshSongsBySunday() to "refreshSongsBySunday" },
                             async { repository.refreshTopSongs() to "refreshTopSongs" },
                             async { repository.refreshTopTones() to "refreshTopTones" },
