@@ -78,7 +78,7 @@ fun WorshipHubNavGraph(
             )
         }
 
-        composable(WorshipHubRoutes.Register) { MusicRegistrationView( viewModel = viewModel,onBack = ::popOrFinish) }
+        composable(WorshipHubRoutes.Register) { MusicRegistrationView(onBack = ::popOrFinish) }
         composable(WorshipHubRoutes.Button3) { WorshipHubPlaceholderScreen(title = "Area 1", onBack = ::popOrFinish) }
         composable(WorshipHubRoutes.Button4) { WorshipHubPlaceholderScreen(title = "Area 2", onBack = ::popOrFinish) }
         composable(WorshipHubRoutes.Button5) { WorshipHubPlaceholderScreen(title = "Area 3", onBack = ::popOrFinish) }
