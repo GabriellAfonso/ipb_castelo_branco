@@ -14,33 +14,23 @@ class AuthInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
+        val path = original.url.encodedPath
 
-        val requiresAuth = original.header(HEADER_REQUIRES_AUTH)
-            ?.equals("true", ignoreCase = true) == true
-
-        // Remove o header interno antes de enviar para o backend
-        val baseRequest = original.newBuilder()
-            .removeHeader(HEADER_REQUIRES_AUTH)
-            .build()
-
-        if (!requiresAuth) {
-            return chain.proceed(baseRequest)
+        // Não anexar Authorization em rotas de autenticação
+        if (path.contains("/auth/login") || path.contains("/auth/refresh")) {
+            return chain.proceed(original)
         }
 
         val access = runBlocking { tokenStorage.loadOrNull()?.access }
 
         val authed = if (!access.isNullOrBlank()) {
-            baseRequest.newBuilder()
+            original.newBuilder()
                 .header("Authorization", "Bearer $access")
                 .build()
         } else {
-            baseRequest
+            original
         }
 
         return chain.proceed(authed)
-    }
-
-    private companion object {
-        private const val HEADER_REQUIRES_AUTH = "Requires-Auth"
     }
 }
