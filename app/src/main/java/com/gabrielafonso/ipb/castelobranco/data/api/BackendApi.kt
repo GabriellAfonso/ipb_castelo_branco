@@ -70,25 +70,21 @@ interface BackendApi {
     ): Response<AuthTokens>
 
     // Protegidas: marcar explicitamente
-    @Headers("Requires-Auth: true")
     @Multipart
     @POST(Endpoints.ME_PROFILE_PHOTO_PATH)
     suspend fun uploadProfilePhoto(
         @Part photo: MultipartBody.Part
     ): Response<ProfilePhotoResponseDto>
 
-    @Headers("Requires-Auth: true")
     @DELETE(Endpoints.ME_PROFILE_PHOTO_PATH)
     suspend fun deleteProfilePhoto(): Response<Unit>
 
 
-    @Headers("Requires-Auth: true")
     @GET(Endpoints.ME_PROFILE_PATH)
     suspend fun getMeProfile(
         @Header("If-None-Match") ifNoneMatch: String? = null
     ): Response<MeProfileDto>
 
-    @Headers("Requires-Auth: true")
     @POST(Endpoints.REGISTER_SUNDAY_PLAYS_PATH)
     suspend fun registerSundayPlays(
         @Body body: RegisterSundayPlaysRequestDto
