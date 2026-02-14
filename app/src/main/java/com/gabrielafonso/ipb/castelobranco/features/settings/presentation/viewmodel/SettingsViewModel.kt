@@ -3,7 +3,7 @@ package com.gabrielafonso.ipb.castelobranco.features.settings.presentation.viewm
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gabrielafonso.ipb.castelobranco.core.data.local.ThemePreferences
+import com.gabrielafonso.ipb.castelobranco.features.settings.domain.model.ThemeMode
 import com.gabrielafonso.ipb.castelobranco.features.settings.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val darkMode: Boolean? = null,
-    val themeMode: Int = ThemePreferences.MODE_FOLLOW_SYSTEM
+    val themeMode: ThemeMode = ThemeMode.FOLLOW_SYSTEM
 )
 
 @HiltViewModel
@@ -33,9 +33,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             repository.themeModeFlow.collect { mode ->
                 val dark: Boolean? = when (mode) {
-                    ThemePreferences.MODE_FOLLOW_SYSTEM -> null
-                    ThemePreferences.MODE_DARK -> true
-                    else -> false
+                    ThemeMode.FOLLOW_SYSTEM -> null
+                    ThemeMode.DARK -> true
+                    ThemeMode.LIGHT -> false
                 }
                 _uiState.value = _uiState.value.copy(
                     themeMode = mode,
@@ -50,9 +50,9 @@ class SettingsViewModel @Inject constructor(
             val currentMode = _uiState.value.themeMode
 
             val isCurrentlyDark: Boolean = when (currentMode) {
-                ThemePreferences.MODE_DARK -> true
-                ThemePreferences.MODE_LIGHT -> false
-                else -> {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.FOLLOW_SYSTEM -> {
                     // FOLLOW_SYSTEM: inferir do modo atual aplicado no app
                     when (AppCompatDelegate.getDefaultNightMode()) {
                         AppCompatDelegate.MODE_NIGHT_YES -> true
@@ -62,18 +62,18 @@ class SettingsViewModel @Inject constructor(
                 }
             }
 
-            val newMode = if (isCurrentlyDark) {
-                ThemePreferences.MODE_LIGHT
+            val newMode: ThemeMode = if (isCurrentlyDark) {
+                ThemeMode.LIGHT
             } else {
-                ThemePreferences.MODE_DARK
+                ThemeMode.DARK
             }
 
             repository.setThemeMode(newMode)
 
             val newNightMode = when (newMode) {
-                ThemePreferences.MODE_DARK -> AppCompatDelegate.MODE_NIGHT_YES
-                ThemePreferences.MODE_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-                else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             }
             AppCompatDelegate.setDefaultNightMode(newNightMode)
 

@@ -1,7 +1,6 @@
 package com.gabrielafonso.ipb.castelobranco.core.network
 
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.local.TokenStorage
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -14,14 +13,13 @@ class AuthInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
-        val path = original.url.encodedPath
 
-        // Não anexar Authorization em rotas de autenticação
-        if (path.contains("/auth/login") || path.contains("/auth/refresh")) {
+        // Se alguém já colocou Authorization manualmente, não sobrescreve
+        if (original.header("Authorization") != null) {
             return chain.proceed(original)
         }
 
-        val access = runBlocking { tokenStorage.loadOrNull()?.access }
+        val access = tokenStorage.peekOrNull()?.access
 
         val authed = if (!access.isNullOrBlank()) {
             original.newBuilder()

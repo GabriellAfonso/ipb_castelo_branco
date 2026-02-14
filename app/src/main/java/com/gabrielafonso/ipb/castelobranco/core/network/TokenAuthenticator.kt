@@ -1,103 +1,71 @@
-// app/src/main/java/com/gabrielafonso/ipb/castelobranco/core/network/TokenAuthenticator.kt
 package com.gabrielafonso.ipb.castelobranco.core.network
 
-import com.gabrielafonso.ipb.castelobranco.core.di.ApiBaseUrl
-import com.gabrielafonso.ipb.castelobranco.core.di.AuthLessClient
-import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.AuthEndpoins
+import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.AuthApi
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.RefreshRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.local.TokenStorage
-import com.gabrielafonso.ipb.castelobranco.features.auth.domain.model.AuthTokens
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.Json
 import okhttp3.Authenticator
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class TokenAuthenticator @Inject constructor(
-    @AuthLessClient private val authlessClient: OkHttpClient,
-    @ApiBaseUrl private val baseUrl: String,
+    private val authApi: AuthApi,
     private val tokenStorage: TokenStorage,
-    private val json: Json,
 ) : Authenticator {
 
-    private val mediaType = "application/json; charset=utf-8".toMediaType()
-
-    // O Mutex garante que apenas UMA requisição tente o refresh por vez
     private val refreshTokenMutex = Mutex()
 
     override fun authenticate(route: Route?, response: Response): Request? {
         if (responseCount(response) >= 2) return null
 
-        return runBlocking {
-            // Entra no lock. Se outra thread já estiver dando refresh, esta espera aqui.
+        return runBlocking(Dispatchers.IO) {
             refreshTokenMutex.withLock {
-                val current = tokenStorage.loadOrNull() ?: return@runBlocking null
+                val current = tokenStorage.peekOrNull() ?: return@runBlocking null
 
-                // --- VERIFICAÇÃO CRÍTICA PARA REFRESH ROTATION ---
-                // Verifica se outra thread já atualizou o token enquanto esta esperava no lock.
-                // Se o token atual no storage for diferente do token que falhou na requisição,
-                // significa que o refresh já foi feito com sucesso.
-                val authHeader = response.request.header("Authorization")
-                if (authHeader != null && current.access.isNotBlank() && "Bearer ${current.access}" != authHeader) {
+                // Se enquanto eu esperava no mutex alguém já atualizou o access,
+                // eu só repito a request com o token atual.
+                val failedAuthHeader = response.request.header("Authorization")
+                val currentAccess = current.access
+                if (!failedAuthHeader.isNullOrBlank() &&
+                    !currentAccess.isNullOrBlank() &&
+                    failedAuthHeader != "Bearer $currentAccess"
+                ) {
                     return@runBlocking response.request.newBuilder()
-                        .header("Authorization", "Bearer ${current.access}")
+                        .header("Authorization", "Bearer $currentAccess")
                         .build()
                 }
 
                 val refresh = current.refresh
                 if (refresh.isBlank()) return@runBlocking null
 
-                val refreshUrl = baseUrl.trimEnd('/') + "/" + AuthEndpoins.AUTH_REFRESH_PATH.trimStart('/')
-
-                val bodyJson = json.encodeToString(
-                    RefreshRequest.serializer(),
-                    RefreshRequest(refresh = refresh),
-                )
-
-                val refreshRequest = Request.Builder()
-                    .url(refreshUrl)
-                    .post(bodyJson.toRequestBody(mediaType))
-                    .build()
-
                 val refreshResponse = runCatching {
-                    authlessClient.newCall(refreshRequest).execute()
+                    authApi.refresh(RefreshRequest(refresh = refresh))
                 }.getOrNull() ?: return@runBlocking null
 
-                refreshResponse.use { rr ->
-                    if (!rr.isSuccessful) {
-                        // Se o refresh falhar (401 ou 400), limpa tudo e desloga
-                        if (rr.code == 401 || rr.code == 400) {
-                            tokenStorage.clear()
-                        }
-                        return@runBlocking null
+                if (!refreshResponse.isSuccessful) {
+                    // Se refresh inválido/expirado -> limpa e para
+                    if (refreshResponse.code() == 401 || refreshResponse.code() == 400) {
+                        tokenStorage.clear()
                     }
-
-                    val raw = rr.body?.string().orEmpty()
-                    val decoded = runCatching {
-                        json.decodeFromString(AuthTokens.serializer(), raw)
-                    }.getOrNull() ?: return@runBlocking null
-
-                    // Salva os novos tokens (mantém o refresh antigo se o novo vier vazio)
-                    val newTokens = decoded.copy(
-                        refresh = decoded.refresh.ifBlank { current.refresh }
-                    )
-
-                    tokenStorage.save(newTokens)
-
-                    // Retorna a requisição original com o novo Token de Acesso
-                    response.request.newBuilder()
-                        .header("Authorization", "Bearer ${newTokens.access}")
-                        .build()
+                    return@runBlocking null
                 }
+
+                val newTokens = refreshResponse.body() ?: return@runBlocking null
+
+                // Seu backend SEMPRE retorna refresh agora, então podemos salvar direto.
+                // (Se um dia mudar, dá pra voltar com fallback.)
+                tokenStorage.save(newTokens)
+
+                return@runBlocking response.request.newBuilder()
+                    .header("Authorization", "Bearer ${newTokens.access}")
+                    .build()
             }
         }
     }
