@@ -1,30 +1,35 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 
-    id("com.google.dagger.hilt.android")
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.dagger.hilt)
+    alias(libs.plugins.google.devtools.ksp)
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "com.gabrielafonso.ipb.castelobranco"
     compileSdk = 36   // use 35/36 apenas se já estiver instalado no SDK Manager
+
 
     defaultConfig {
         applicationId = "com.gabrielafonso.ipb.castelobranco"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.4.2"
+        versionName = "0.4.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.4:8000/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.3:8000/\"")
             isMinifyEnabled = false
         }
 
@@ -46,10 +51,6 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -64,6 +65,12 @@ android {
             excludes += "/META-INF/NOTICE*"
             excludes += "/META-INF/*.kotlin_module"
         }
+    }
+}
+
+extensions.configure<KotlinAndroidProjectExtension> {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -86,20 +93,20 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.9.6")
+    implementation(libs.androidx.navigation.compose)
 
     // Retrofit + OkHttp
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.okhttp.logging.interceptor)
 
     // Kotlin Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.converter.kotlinx.serialization)
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.52")
-    ksp("com.google.dagger:hilt-compiler:2.52")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit)
@@ -109,9 +116,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    implementation (libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.ucrop)
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-//    implementation("com.vanniktech:android-image-cropper:4.7.0")
+    coreLibraryDesugaring(libs.android.tools.desugar.jdk.libs)
 }

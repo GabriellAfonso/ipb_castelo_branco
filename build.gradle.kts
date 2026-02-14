@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
-    id("com.google.devtools.ksp") version "2.0.21-1.0.28" apply false
-    id("com.google.dagger.hilt.android") version "2.52" apply false
+    // Use o alias que definimos no TOML para o KSP
+    alias(libs.plugins.google.devtools.ksp) apply false
+    alias(libs.plugins.dagger.hilt) apply false
 }
