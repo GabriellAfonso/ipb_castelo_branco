@@ -42,7 +42,7 @@ import com.gabrielafonso.ipb.castelobranco.core.ui.base.BaseScreen
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.entry.HymnalActivity
 import com.gabrielafonso.ipb.castelobranco.features.schedule.entry.ScheduleActivity
 import com.gabrielafonso.ipb.castelobranco.features.settings.entry.SettingsActivity
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.entry.WorshipHubActivity
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.hub.entry.WorshipHubActivity
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 

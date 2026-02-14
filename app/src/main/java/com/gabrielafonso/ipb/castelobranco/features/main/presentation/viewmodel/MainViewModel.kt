@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.repository.ScheduleRepository
 import com.gabrielafonso.ipb.castelobranco.features.profile.domain.repository.ProfileRepository
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.domain.repository.SongsRepository
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.domain.repository.SongsRepository
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.local.AuthSession
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.domain.repository.HymnalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

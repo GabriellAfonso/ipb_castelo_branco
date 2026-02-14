@@ -17,7 +17,7 @@
             android:networkSecurityConfig="@xml/network_security_config"
             android:theme="@style/Theme.IPBCasteloBranco">
             <activity
-                android:name=".features.worshiphub.entry.WorshipHubActivity"
+                android:name=".features.worshiphub.hub.entry.WorshipHubActivity"
                 android:exported="false"
                 android:screenOrientation="portrait"
                 android:label="Worship Hub"
