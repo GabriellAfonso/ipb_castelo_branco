@@ -43,6 +43,6 @@ object ApiModule {
     @Provides
     @Singleton
     fun provideSongsTableApi(
-        @AuthedRetrofit retrofit: Retrofit
+        @AuthLessRetrofit retrofit: Retrofit
     ): SongsTableApi = retrofit.create(SongsTableApi::class.java)
 }
