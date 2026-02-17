@@ -44,7 +44,9 @@ import com.gabrielafonso.ipb.castelobranco.features.hymnal.presentation.viewmode
 
 data class HymnalUiState(
     val hymns: List<Hymn> = emptyList(),
-    val query: String = ""
+    val query: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 data class HymnalActions(

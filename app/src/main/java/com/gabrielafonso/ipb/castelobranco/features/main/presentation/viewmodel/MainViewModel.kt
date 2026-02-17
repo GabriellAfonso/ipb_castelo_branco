@@ -2,6 +2,7 @@ package com.gabrielafonso.ipb.castelobranco.features.main.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.repository.ScheduleRepository
 import com.gabrielafonso.ipb.castelobranco.features.profile.domain.repository.ProfileRepository
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.domain.repository.SongsRepository
@@ -10,10 +11,13 @@ import com.gabrielafonso.ipb.castelobranco.features.hymnal.domain.repository.Hym
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.RefreshResult
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -71,10 +75,21 @@ class MainViewModel @Inject constructor(
             if (!authSession.isLoggedIn()) return@launch
 
             runCatching {
-                val profile = profileRepository.getMeProfile().getOrThrow()
+                when (profileRepository.refreshMeProfile()) {
+                    is RefreshResult.Error ->
+                        error("Falha ao atualizar perfil")
+                    else -> Unit
+                }
+
+                val profile = profileRepository.observeMeProfile()
+                    .first { it is SnapshotState.Data }
+                    .let { (it as SnapshotState.Data).value }
+
                 val url = profile.photoUrl
                 if (!url.isNullOrBlank()) {
-                    profileRepository.downloadAndPersistProfilePhoto(url).getOrThrow()
+                    profileRepository
+                        .downloadAndPersistProfilePhoto(url)
+                        .getOrThrow()
                 }
             }
         }

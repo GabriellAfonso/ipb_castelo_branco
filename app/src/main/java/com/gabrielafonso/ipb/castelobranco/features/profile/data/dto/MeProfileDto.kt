@@ -8,5 +8,6 @@ data class MeProfileDto(
     @SerialName("name") val name: String,
     @SerialName("active") val active: Boolean,
     @SerialName("is_member") val isMember: Boolean,
+    @SerialName("is_admin") val isAdmin: Boolean,
     @SerialName("photo_url") val photoUrl: String? = null
 )

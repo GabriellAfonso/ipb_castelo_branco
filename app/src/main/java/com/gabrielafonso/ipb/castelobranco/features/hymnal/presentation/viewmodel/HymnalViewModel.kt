@@ -3,6 +3,7 @@ package com.gabrielafonso.ipb.castelobranco.features.hymnal.presentation.viewmod
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.domain.repository.HymnalRepository
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.presentation.views.HymnalUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,12 +28,40 @@ class HymnalViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.observeHymnal().collect { hymns ->
-                _uiState.update { it.copy(hymns = hymns) }
+            repository.observeHymnal().collect { state ->
+                when (state) {
+                    is SnapshotState.Loading -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = true,
+                                error = null
+                            )
+                        }
+                    }
+
+                    is SnapshotState.Data -> {
+                        _uiState.update {
+                            it.copy(
+                                hymns = state.value,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    }
+
+                    is SnapshotState.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = state.throwable.message
+                                    ?: "Erro ao carregar hinário"
+                            )
+                        }
+                    }
+                }
             }
         }
     }
-
     fun onQueryChange(query: String) {
         _uiState.update { it.copy(query = query) }
     }

@@ -1,4 +1,4 @@
-package com.gabrielafonso.ipb.castelobranco.features.profile.data.dto
+ package com.gabrielafonso.ipb.castelobranco.features.profile.data.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

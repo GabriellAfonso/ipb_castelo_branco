@@ -11,8 +11,9 @@ import javax.inject.Singleton
 
 @Singleton
 class JsonSnapshotStorage @Inject constructor(
-    @param: ApplicationContext private val context: Context,
-) {
+    @param:ApplicationContext private val context: Context,
+) : SnapshotStorage {
+
     private val dirName = "snapshots"
 
     private fun safeKey(key: String): String {
@@ -34,36 +35,38 @@ class JsonSnapshotStorage @Inject constructor(
     private fun etagFileForKey(key: String): File =
         File(dir(), "${safeKey(key)}_etag.txt")
 
-    suspend fun save(key: String, json: String) = withContext(Dispatchers.IO) {
+    override suspend fun save(key: String, json: String) = withContext(Dispatchers.IO) {
         jsonFileForKey(key).writeText(json)
     }
 
-    suspend fun loadOrNull(key: String): String? = withContext(Dispatchers.IO) {
-        val file = jsonFileForKey(key)
-        if (!file.exists()) return@withContext null
-        file.readText()
+    override suspend fun loadOrNull(key: String): String? = withContext(Dispatchers.IO) {
+        jsonFileForKey(key).takeIf { it.exists() }?.readText()
     }
 
-    suspend fun clear(key: String) = withContext(Dispatchers.IO) {
-        jsonFileForKey(key).takeIf { it.exists() }?.delete()
-        etagFileForKey(key).takeIf { it.exists() }?.delete()
+    override suspend fun clear(key: String) = withContext(Dispatchers.IO) {
+        val json = jsonFileForKey(key)
+        if (json.exists()) json.delete()
+
+        val etag = etagFileForKey(key)
+        if (etag.exists()) etag.delete()
     }
 
-    suspend fun clearAll() = withContext(Dispatchers.IO) {
-        val d = File(context.filesDir, dirName)
-        if (d.exists()) d.deleteRecursively()
+    override suspend fun clearAll() = withContext(Dispatchers.IO) {
+        val dir = File(context.filesDir, dirName)
+        if (dir.exists()) dir.deleteRecursively()
+    }
+    override suspend fun loadETagOrNull(key: String): String? = withContext(Dispatchers.IO) {
+        etagFileForKey(key)
+            .takeIf { it.exists() }
+            ?.readText()
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 
-    suspend fun loadETagOrNull(key: String): String? = withContext(Dispatchers.IO) {
-        val file = etagFileForKey(key)
-        if (!file.exists()) return@withContext null
-        file.readText().trim().takeIf { it.isNotBlank() }
-    }
-
-    suspend fun saveETag(key: String, etag: String) = withContext(Dispatchers.IO) {
+    override suspend fun saveETag(key: String, etag: String) = withContext(Dispatchers.IO) {
         etagFileForKey(key).writeText(etag)
     }
 
-    fun getAbsolutePathForDebug(key: String): String =
+    override fun getAbsolutePathForDebug(key: String): String =
         jsonFileForKey(key).absolutePath
 }
