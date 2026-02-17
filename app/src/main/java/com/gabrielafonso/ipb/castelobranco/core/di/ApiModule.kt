@@ -4,6 +4,7 @@ import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.AuthApi
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.data.api.HymnalApi
 import com.gabrielafonso.ipb.castelobranco.features.profile.data.api.ProfileApi
 import com.gabrielafonso.ipb.castelobranco.features.schedule.data.api.ScheduleApi
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.data.api.WorshipRegisterApi
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.api.SongsTableApi
 import dagger.Module
 import dagger.Provides
@@ -45,4 +46,10 @@ object ApiModule {
     fun provideSongsTableApi(
         @AuthLessRetrofit retrofit: Retrofit
     ): SongsTableApi = retrofit.create(SongsTableApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideWorshipRegisterApi(
+        @AuthedRetrofit retrofit: Retrofit
+    ): WorshipRegisterApi = retrofit.create(WorshipRegisterApi::class.java)
 }

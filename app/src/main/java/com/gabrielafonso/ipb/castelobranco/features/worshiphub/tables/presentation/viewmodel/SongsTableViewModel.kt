@@ -2,6 +2,7 @@ package com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.presentat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.domain.repository.SongsRepository
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.Song
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.SuggestedSong
@@ -13,10 +14,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,9 +24,8 @@ class SongsTableViewModel @Inject constructor(
     private val repository: SongsRepository
 ) : ViewModel() {
 
-    val allSongs: StateFlow<List<Song>> =
-        repository.observeAllSongs()
-            .stateIn(viewModelScope, SharingStarted.Companion.WhileSubscribed(5_000), emptyList())
+    private val _allSongs = MutableStateFlow<List<Song>>(emptyList())
+    val allSongs: StateFlow<List<Song>> = _allSongs.asStateFlow()
 
     fun refreshAllSongs() {
         viewModelScope.launch { repository.refreshAllSongs() }
@@ -52,10 +50,31 @@ class SongsTableViewModel @Inject constructor(
     val fixedByPosition: StateFlow<Map<Int, Int>> = _fixedByPosition.asStateFlow()
 
     init {
-        viewModelScope.launch { repository.observeSongsBySunday().collect { _lastSundays.value = it } }
-        viewModelScope.launch { repository.observeTopSongs().collect { _topSongs.value = it } }
-        viewModelScope.launch { repository.observeTopTones().collect { _topTones.value = it } }
-        viewModelScope.launch { repository.observeSuggestedSongs().collect { _suggestedSongs.value = it } }
+        viewModelScope.launch {
+            repository.observeSongsBySunday().collect { state ->
+                if (state is SnapshotState.Data) _lastSundays.value = state.value
+            }
+        }
+        viewModelScope.launch {
+            repository.observeTopSongs().collect { state ->
+                if (state is SnapshotState.Data) _topSongs.value = state.value
+            }
+        }
+        viewModelScope.launch {
+            repository.observeTopTones().collect { state ->
+                if (state is SnapshotState.Data) _topTones.value = state.value
+            }
+        }
+        viewModelScope.launch {
+            repository.observeSuggestedSongs().collect { state ->
+                if (state is SnapshotState.Data) _suggestedSongs.value = state.value
+            }
+        }
+        viewModelScope.launch {
+            repository.observeAllSongs().collect { state ->
+                if (state is SnapshotState.Data) _allSongs.value = state.value
+            }
+        }
     }
 
     fun toggleFixed(song: SuggestedSong) {
@@ -91,21 +110,5 @@ class SongsTableViewModel @Inject constructor(
         data class Error(val message: String) : SubmitResult()
     }
 
-    fun submitSundayPlays(
-        date: String,
-        rows: List<SundayPlayPushItem>,
-        onResult: (SubmitResult) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                repository.pushSundayPlays(date = date, plays = rows)
-                onResult(SubmitResult.Success)
-            } catch (t: Throwable) {
-                val msg =
-                    t.message?.trim().takeIf { !it.isNullOrBlank() }
-                        ?: "Erro inesperado ao enviar."
-                onResult(SubmitResult.Error(msg))
-            }
-        }
-    }
+
 }

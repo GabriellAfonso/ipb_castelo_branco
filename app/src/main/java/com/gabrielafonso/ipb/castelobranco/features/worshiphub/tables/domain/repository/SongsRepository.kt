@@ -1,33 +1,29 @@
 package com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.domain.repository
 
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.RefreshResult
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.Song
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.SuggestedSong
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.SundayPlayPushItem
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.SundaySet
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.TopSong
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.TopTone
 import kotlinx.coroutines.flow.Flow
 
 interface SongsRepository {
-    fun observeSongsBySunday(): Flow<List<SundaySet>>
-    suspend fun refreshSongsBySunday(): Boolean
 
-    fun observeTopSongs(): Flow<List<TopSong>>
-    suspend fun refreshTopSongs(): Boolean
+    fun observeSongsBySunday(): Flow<SnapshotState<List<SundaySet>>>
+    suspend fun refreshSongsBySunday(): RefreshResult
 
-    fun observeTopTones(): Flow<List<TopTone>>
-    suspend fun refreshTopTones(): Boolean
+    fun observeTopSongs(): Flow<SnapshotState<List<TopSong>>>
+    suspend fun refreshTopSongs(): RefreshResult
 
-    fun observeSuggestedSongs(): Flow<List<SuggestedSong>>
-    suspend fun refreshSuggestedSongs(): Boolean
-    suspend fun refreshSuggestedSongs(fixedByPosition: Map<Int, Int>): Boolean
+    fun observeTopTones(): Flow<SnapshotState<List<TopTone>>>
+    suspend fun refreshTopTones(): RefreshResult
 
-    fun observeAllSongs(): Flow<List<Song>>
-    suspend fun refreshAllSongs(): Boolean
+    fun observeSuggestedSongs(): Flow<SnapshotState<List<SuggestedSong>>>
+    suspend fun refreshSuggestedSongs(): RefreshResult
+    suspend fun refreshSuggestedSongs(fixedByPosition: Map<Int, Int>): RefreshResult
 
-    // \- novo: push dos plays de domingo
-    suspend fun pushSundayPlays(
-        date: String,
-        plays: List<SundayPlayPushItem>
-    ): Boolean
+    fun observeAllSongs(): Flow<SnapshotState<List<Song>>>
+    suspend fun refreshAllSongs(): RefreshResult
 }

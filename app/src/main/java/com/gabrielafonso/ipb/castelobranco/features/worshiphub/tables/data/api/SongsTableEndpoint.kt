@@ -10,7 +10,4 @@ object SongsTableEndpoint {
     const val SUGGESTED_SONGS_PATH = "${ApiConstants.BASE_PATH}suggested-songs/"
 
 
-// MUDAR 
-    const val REGISTER_SUNDAY_PLAYS_PATH = "${ApiConstants.BASE_PATH}played/register/"
-
 }

@@ -2,13 +2,15 @@ package com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.present
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.domain.mapper.SundayPlaysMapper
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.domain.repository.WorshipRegisterRepository
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.domain.validation.MusicRegistrationValidator
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.state.MusicRegistrationEvent
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.state.MusicRegistrationUiState
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.domain.validation.MusicRegistrationValidator
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.state.RegistrationType
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.util.SongLabelFormatter
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.domain.mapper.SundayPlaysMapper
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.state.SundaySongRowState
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.presentation.util.SongLabelFormatter
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.domain.repository.SongsRepository
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.model.Song
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +25,8 @@ import kotlin.collections.plus
 
 @HiltViewModel
 class MusicRegistrationViewModel @Inject constructor(
-    private val repository: SongsRepository
+    private val repository: SongsRepository,
+    private val registerRepository: WorshipRegisterRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MusicRegistrationUiState())
@@ -55,10 +58,30 @@ class MusicRegistrationViewModel @Inject constructor(
         if (alreadyObserving) return
 
         viewModelScope.launch {
-            repository.observeAllSongs().collect { songs ->
-                _uiState.update { state ->
-                    val updated = state.copy(availableSongs = songs)
-                    updated.recomputeSundayErrors()
+            repository.observeAllSongs().collect { snapshot ->
+                when (snapshot) {
+                    is SnapshotState.Loading -> {
+                        _uiState.update { it.copy(isLoadingSongs = true) }
+                    }
+
+                    is SnapshotState.Data -> {
+                        _uiState.update { state ->
+                            val updated = state.copy(
+                                availableSongs = snapshot.value,
+                                isLoadingSongs = false
+                            )
+                            updated.recomputeSundayErrors()
+                        }
+                    }
+
+                    is SnapshotState.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoadingSongs = false,
+                                snackbarMessage = "Falha ao carregar músicas."
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -161,7 +184,6 @@ class MusicRegistrationViewModel @Inject constructor(
             return
         }
 
-        // Revalida antes de enviar
         val validation = MusicRegistrationValidator.validateSundayRows(state.sundayRows, state.availableSongs)
         if (validation.errorsByPosition.isNotEmpty()) {
             _uiState.update {
@@ -181,7 +203,7 @@ class MusicRegistrationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
             try {
-                repository.pushSundayPlays(date = dateIso, plays = plays)
+                registerRepository.pushSundayPlays(date = dateIso, plays = plays).getOrThrow()
                 _uiState.update { it.copy(snackbarMessage = "Enviado com sucesso.") }
             } catch (t: Throwable) {
                 val msg = t.message?.trim().takeIf { !it.isNullOrBlank() } ?: "Erro inesperado ao enviar."

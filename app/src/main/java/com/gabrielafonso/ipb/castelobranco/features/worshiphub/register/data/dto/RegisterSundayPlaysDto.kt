@@ -1,4 +1,4 @@
-package com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto
+package com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.data.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -1,8 +1,8 @@
 package com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.api
 
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.AllSongDto
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.RegisterSundayPlaysRequestDto
-import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.RegisterSundayPlaysResponseDto
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.data.dto.RegisterSundayPlaysRequestDto
+import com.gabrielafonso.ipb.castelobranco.features.worshiphub.register.data.dto.RegisterSundayPlaysResponseDto
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.SongsBySundayDto
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.SuggestedSongDto
 import com.gabrielafonso.ipb.castelobranco.features.worshiphub.tables.data.dto.TopSongDto
@@ -42,12 +42,6 @@ interface SongsTableApi {
         @Header("If-None-Match") ifNoneMatch: String? = null,
         @Query("fixed") fixed: String? = null
     ): Response<List<SuggestedSongDto>>
-
-//Mudar
-    @POST(SongsTableEndpoint.REGISTER_SUNDAY_PLAYS_PATH)
-    suspend fun registerSundayPlays(
-        @Body body: RegisterSundayPlaysRequestDto
-    ): Response<RegisterSundayPlaysResponseDto>
 
 
 }
