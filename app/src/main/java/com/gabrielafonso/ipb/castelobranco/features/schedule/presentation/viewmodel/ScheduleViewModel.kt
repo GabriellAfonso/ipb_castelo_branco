@@ -2,6 +2,7 @@ package com.gabrielafonso.ipb.castelobranco.features.schedule.presentation.viewm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.model.MonthSchedule
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.repository.ScheduleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,15 +19,21 @@ class ScheduleViewModel @Inject constructor(
     private val repository: ScheduleRepository
 ) : ViewModel() {
 
-    private val _monthSchedule = MutableStateFlow<MonthSchedule?>(null)
-    val monthSchedule: StateFlow<MonthSchedule?> = _monthSchedule.asStateFlow()
+    private val _monthScheduleState =
+        MutableStateFlow<SnapshotState<MonthSchedule>>(SnapshotState.Loading)
+
+    val monthScheduleState: StateFlow<SnapshotState<MonthSchedule>> =
+        _monthScheduleState.asStateFlow()
 
     private val _isRefreshingMonthSchedule = MutableStateFlow(false)
     val isRefreshingMonthSchedule: StateFlow<Boolean> = _isRefreshingMonthSchedule.asStateFlow()
 
     init {
         viewModelScope.launch {
-            repository.observeMonthSchedule().collect { _monthSchedule.value = it }
+            repository.observeMonthSchedule()
+                .collect { snapshotState ->
+                    _monthScheduleState.value = snapshotState
+                }
         }
     }
 

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielafonso.ipb.castelobranco.R
+import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.core.ui.base.BaseScreen
 import java.util.Locale
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.model.MonthSchedule
@@ -38,10 +39,17 @@ fun MonthScheduleView(
     onBackClick: () -> Unit,
     onShare: (String) -> Unit
 ) {
-    val monthSchedule by viewModel.monthSchedule.collectAsStateWithLifecycle()
+    val monthScheduleState by viewModel.monthScheduleState.collectAsStateWithLifecycle()
     val isLoading by viewModel.isRefreshingMonthSchedule.collectAsStateWithLifecycle()
 
-    val formattedText = monthSchedule?.toWhatsappText().orEmpty()
+    val formattedText = when (monthScheduleState) {
+        is SnapshotState.Data ->
+            (monthScheduleState as SnapshotState.Data<MonthSchedule>)
+                .value
+                .toWhatsappText()
+
+        else -> ""
+    }
 
     BaseScreen(
         tabName = "Escala Mensal",
@@ -90,8 +98,7 @@ fun MonthScheduleView(
                         }
                     } else {
                         Text(
-                            text = if (formattedText.isBlank()) "Sem escala disponível."
-                            else formattedText,
+                            text = formattedText.ifBlank { "Sem escala disponível." },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -120,7 +127,7 @@ fun MonthScheduleView(
 
                 Button(
                     onClick = { onShare(formattedText) },
-                    enabled = formattedText.isNotBlank(),
+                    enabled = monthScheduleState is SnapshotState.Data,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
