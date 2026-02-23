@@ -7,7 +7,6 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +28,7 @@ import com.gabrielafonso.ipb.castelobranco.R
 
 import com.gabrielafonso.ipb.castelobranco.core.ui.components.TopBar
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.local.AuthSession
+import com.gabrielafonso.ipb.castelobranco.features.auth.entry.AuthActivity
 import com.gabrielafonso.ipb.castelobranco.features.profile.data.local.ProfilePhotoBus
 import com.gabrielafonso.ipb.castelobranco.features.profile.entry.ProfileActivity
 import dagger.hilt.EntryPoint
@@ -72,7 +72,7 @@ private class TopBarProfileViewModel(
     }
 
     fun bumpPhotoVersion() {
-        _profilePhotoVersion.value = _profilePhotoVersion.value + 1
+        _profilePhotoVersion.value += 1
     }
 }
 
@@ -142,6 +142,8 @@ fun BaseScreen(
     val resolvedOnAccountClick: () -> Unit = onAccountClick ?: {
         if (isLoggedIn) {
             activity.startActivity(Intent(activity, ProfileActivity::class.java))
+        } else {
+            activity.startActivity(Intent(activity, AuthActivity::class.java))
         }
     }
 

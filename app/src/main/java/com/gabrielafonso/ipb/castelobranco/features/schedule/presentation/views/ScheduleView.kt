@@ -139,61 +139,7 @@ private fun ScheduleContent(
             MonthScheduleTable(sections = sections)
         }
 
-        // 3. RODAPÉ FIXO (Fora do scroll)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Button(
-                onClick = { /* Lógica de nova escala */ },
-                enabled = false,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Nova Escala")
-            }
-
-            Button(
-                onClick = {
-                    val text = MonthScheduleWhatsappFormatter.format(
-                        schedule = monthSchedule,
-                        locale = Locale.forLanguageTag("pt-BR")
-                    )
-                    onShare(text)
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Compartilhar")
-            }
-        }
     }
 }
 // Mantenho esta função aqui, pois o seu ViewModel a importa deste pacote.
 // DICA: No futuro, mova isso para um arquivo "ScheduleUiMapper.kt" para limpar a View.
-private val SORT_ORDER = listOf("terça", "terca", "quinta", "domingo")
-private val PT_BR_LOCALE = Locale.forLanguageTag("pt-BR")
-
-fun MonthSchedule.toSectionsUi(): List<ScheduleSectionUi> {
-    return schedule.entries
-        .map { entry ->
-            val titleLower = entry.key.trim().lowercase(PT_BR_LOCALE)
-            val weight = SORT_ORDER.indexOfFirst { titleLower.startsWith(it) }
-                .let { if (it == -1) Int.MAX_VALUE else it }
-            weight to entry
-        }
-        .sortedWith(
-            compareBy<Pair<Int, Map.Entry<String, ScheduleEntry>>> { it.first }
-                .thenBy { it.second.key.lowercase(PT_BR_LOCALE) }
-        )
-        .map { (weight, entry) ->
-            val scheduleEntry = entry.value
-            ScheduleSectionUi(
-                title = entry.key,
-                time = scheduleEntry.time,
-                rows = scheduleEntry.items
-                    .sortedBy { it.day }
-                    .map { item ->
-                        ScheduleRowUi(day = item.day, member = item.member)
-                    }
-            )
-        }
-}

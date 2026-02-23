@@ -22,14 +22,14 @@ extensions.configure<ApplicationExtension> {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.4.8"
+        versionName = "0.4.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.3:8000/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.100:8000/\"")
             isMinifyEnabled = false
         }
 

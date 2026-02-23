@@ -7,7 +7,7 @@ import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.logTime
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.model.MonthSchedule
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.repository.ScheduleRepository
 import com.gabrielafonso.ipb.castelobranco.features.schedule.presentation.components.ScheduleSectionUi
-import com.gabrielafonso.ipb.castelobranco.features.schedule.presentation.views.toSectionsUi
+import com.gabrielafonso.ipb.castelobranco.features.schedule.data.mapper.toSectionsUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -44,6 +44,7 @@ class ScheduleViewModel @Inject constructor(
 
     init {
         logTime("ScheduleViewModel", "ViewModel criada e conectada ao fluxo reativo")
+        viewModelScope.launch { refreshMonthSchedule() }
     }
 
     fun refreshMonthSchedule(minDurationMs: Long = 600L) {
@@ -82,7 +83,6 @@ class ScheduleViewModel @Inject constructor(
             }
             is SnapshotState.Loading -> ScheduleUiState.Loading
 
-            // AQUI ESTAVA O ERRO: O Kotlin exige que você trate o caso de erro ou qualquer outro
             else -> ScheduleUiState.Empty
         }
     }

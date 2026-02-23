@@ -51,6 +51,9 @@ class SongsTableViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            repository.refreshSongsBySunday()
+        }
+        viewModelScope.launch {
             repository.observeSongsBySunday().collect { state ->
                 if (state is SnapshotState.Data) _lastSundays.value = state.value
             }
