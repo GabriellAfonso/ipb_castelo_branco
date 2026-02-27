@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -57,6 +59,7 @@ fun PhotoView(
         actions = nav
     )
 }
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PhotoScreen(
@@ -70,20 +73,24 @@ fun PhotoScreen(
     val context = LocalContext.current
 
     var isZoomed by remember { mutableStateOf(false) }
-// Cria o título dinâmico baseado na página atual do Pager
-    val currentTitle = remember(pagerState.currentPage, photos) {
-        if (photos.isNotEmpty()) {
-            photos.getOrNull(pagerState.currentPage)?.name ?: "Foto"
-        } else {
-            "Carregando..."
-        }
-    }
+    var photoName by remember { mutableStateOf("Carregando...") }
+
     LaunchedEffect(albumId) {
         photos = viewModel.getLocalPhotos(albumId)
     }
+     // 2. Observa a mudança de página para atualizar o nome na TopBar
+    LaunchedEffect(pagerState.currentPage, photos) {
+        if (photos.isNotEmpty()) {
+            val currentFile = photos[pagerState.currentPage]
+            val currentPhotoId = currentFile.nameWithoutExtension.toLongOrNull()
 
+            if (currentPhotoId != null) {
+                photoName = viewModel.getPhotoName(albumId, currentPhotoId)
+            }
+        }
+    }
     BaseScreen(
-        tabName = currentTitle,
+        tabName = photoName,
         logoRes = R.drawable.ic_galery,
         showBackArrow = true,
         onBackClick = actions.back
@@ -93,6 +100,7 @@ fun PhotoScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
             if (photos.isNotEmpty()) {
                 HorizontalPager(
                     state = pagerState,

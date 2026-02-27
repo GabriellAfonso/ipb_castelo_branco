@@ -38,6 +38,7 @@ class GalleryRepositoryImpl @Inject constructor(
         val albums = storage.listAlbums().map { Album(it.first, it.second) }
         _albumsFlow.value = albums
     }
+
     override fun downloadAlbum(albumId: Long): Flow<DownloadProgress> = flow {
         val photos = api.getAlbumPhotos(albumId)
         emitAll(processDownload(photos))
@@ -82,7 +83,6 @@ class GalleryRepositoryImpl @Inject constructor(
                 storage.save(
                     albumId = albumId,
                     photoId = photoId,
-                    photoName = photoName,
                     ext = photo.fileExtension(),
                     input = body.byteStream()
                 )
@@ -123,7 +123,12 @@ class GalleryRepositoryImpl @Inject constructor(
         storage.listAlbums().map { Album(it.first, it.second) }
     }
 
-   override suspend fun getThumbnailForAlbum(albumId: Long): File? = withContext(Dispatchers.IO) {
+    override suspend fun getThumbnailForAlbum(albumId: Long): File? = withContext(Dispatchers.IO) {
         storage.getThumbnailFile(albumId)
     }
+
+    override suspend fun getPhotoName(albumId: Long, photoId: Long): String? =
+        withContext(Dispatchers.IO) {
+            storage.getPhotoName(albumId, photoId)
+        }
 }

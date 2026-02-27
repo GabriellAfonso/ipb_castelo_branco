@@ -12,6 +12,7 @@ import java.io.InputStream
 import javax.inject.Inject
 
 import android.util.Log
+
 class GalleryPhotoStorage(
     @ApplicationContext private val context: Context
 ) {
@@ -22,12 +23,11 @@ class GalleryPhotoStorage(
     fun save(
         albumId: Long,
         photoId: Long,
-        photoName: String,
         ext: String,
         input: InputStream
     ): File {
         val dir = albumDir(albumId).apply { mkdirs() }
-        val file = File(dir, "$photoName.$ext")
+        val file = File(dir, "$photoId.$ext")
 
         FileOutputStream(file).use { output ->
             input.copyTo(output)
@@ -112,49 +112,22 @@ class GalleryPhotoStorage(
         return getPhotoMetadata(albumId, firstPhotoId)?.albumName
     }
 
-   fun getThumbnailFile(albumId: Long): File? {
-    val TAG = "GalleryStorage"
-
-    val files = listPhotos(albumId)
-    Log.d(TAG, "getThumbnailFile: Album $albumId - Total files found: ${files.size}")
-
-    if (files.isEmpty()) {
-        Log.w(TAG, "getThumbnailFile: No files in album $albumId, returning null")
-        return null
+    fun getPhotoName(albumId: Long, photoId: Long): String? {
+        val name = getPhotoMetadata(albumId, photoId)?.name
+        return name?.substringBeforeLast(".")
     }
 
-    val photosWithName = files.mapNotNull { file ->
-        val photoIdStr = file.name.substringBefore(".")
-        Log.d(TAG, "getThumbnailFile: Processing file ${file.name} - Extracted photoIdStr: $photoIdStr")
+    fun getThumbnailFile(albumId: Long): File? {
+        val files = listPhotos(albumId)
+        if (files.isEmpty()) return null
 
-        val photoId = photoIdStr.toLongOrNull()
-        if (photoId == null) {
-            Log.w(TAG, "getThumbnailFile: Invalid photoId for file ${file.name}, skipping")
-            return@mapNotNull null
+        // Tenta encontrar a img00 primeiro (Para no primeiro match)
+        val img00 = files.firstOrNull { file ->
+            val photoId = file.name.substringBefore(".").toLongOrNull()
+            photoId != null && getPhotoMetadata(albumId, photoId)?.name?.lowercase() == "img00.jpg"
         }
 
-        val dto = getPhotoMetadata(albumId, photoId)
-        if (dto == null) {
-            Log.w(TAG, "getThumbnailFile: No metadata for photoId $photoId in album $albumId, skipping")
-            return@mapNotNull null
-        }
-
-        Log.d(TAG, "getThumbnailFile: Found valid DTO for ${file.name} - Name: ${dto.name}")
-        dto.name to file
+        // Se achou a img00, retorna ela. Se não, retorna a primeira foto da lista.
+        return img00 ?: files.firstOrNull()
     }
-
-    Log.d(TAG, "getThumbnailFile: Valid photos with names: ${photosWithName.size}")
-
-    val sorted = photosWithName.sortedBy { it.first }
-    Log.d(TAG, "getThumbnailFile: Sorted photos: ${sorted.map { it.first }}")
-
-    return if (sorted.isNotEmpty()) {
-        val thumbFile = sorted.first().second
-        Log.i(TAG, "getThumbnailFile: Selected thumbnail: ${thumbFile.name} for album $albumId")
-        thumbFile
-    } else {
-        Log.w(TAG, "getThumbnailFile: No valid thumbnails after processing, returning null")
-        null
-    }
-}
 }

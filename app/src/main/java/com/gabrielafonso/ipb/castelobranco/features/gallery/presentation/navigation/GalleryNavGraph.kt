@@ -26,8 +26,8 @@ data class GalleryNav(
 
 object GalleryRoutes {
     const val Gallery = "GalleryMain"
-    fun Album(albumId: Long) = "GalleryAlbum/$albumId"
-    fun Photo(albumId: Long, photoIndex: Int) = "GalleryPhoto/$albumId/$photoIndex"
+    fun Album(albumId: Long) = "Album/$albumId"
+    fun Photo(albumId: Long, photoIndex: Int) = "Photo/$albumId/$photoIndex"
 }
 
 @Composable
@@ -55,7 +55,7 @@ fun GalleryNavGraph(
         }
 
         composable(
-            route = "GalleryAlbum/{albumId}",
+            route = "Album/{albumId}",
             arguments = listOf(navArgument("albumId") { type = NavType.LongType })
         ) { backStackEntry ->
             val albumId = backStackEntry.arguments?.getLong("albumId") ?: 0L
@@ -63,7 +63,7 @@ fun GalleryNavGraph(
         }
 
         composable(
-            route = "GalleryPhoto/{albumId}/{photoIndex}",
+            route = "Photo/{albumId}/{photoIndex}",
             arguments = listOf(
                 navArgument("albumId") { type = NavType.LongType },
                 navArgument("photoIndex") { type = NavType.IntType }

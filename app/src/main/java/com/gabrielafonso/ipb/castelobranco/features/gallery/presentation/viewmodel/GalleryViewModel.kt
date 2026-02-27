@@ -1,5 +1,6 @@
 package com.gabrielafonso.ipb.castelobranco.features.gallery.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.features.gallery.data.repository.Album
@@ -30,7 +31,7 @@ class GalleryViewModel @Inject constructor(
         MutableStateFlow(GalleryDownloadState())
     val downloadState: StateFlow<GalleryDownloadState> = _downloadState
 
-  val albums = repository.albumsFlow
+    val albums = repository.albumsFlow
 
     private val thumbnails = mutableMapOf<Long, MutableStateFlow<File?>>()
 
@@ -48,7 +49,7 @@ class GalleryViewModel @Inject constructor(
         }.asStateFlow()
     }
 
- fun downloadAllPhotos() {
+    fun downloadAllPhotos() {
         if (_downloadState.value.isDownloading) return
 
         viewModelScope.launch {
@@ -65,12 +66,16 @@ class GalleryViewModel @Inject constructor(
     }
 
 
-
-  fun clearGallery() {
+    fun clearGallery() {
         viewModelScope.launch {
             repository.clearAllPhotos()
             _downloadState.value = GalleryDownloadState()
         }
+    }
+
+    suspend fun getPhotoName(albumId: Long, photoId: Long): String {
+        Log.d("TAG", "getPhotoName: $albumId - $photoId")
+        return repository.getPhotoName(albumId, photoId) ?: "Foto"
     }
 
     suspend fun getLocalPhotos(albumId: Long): List<File> {

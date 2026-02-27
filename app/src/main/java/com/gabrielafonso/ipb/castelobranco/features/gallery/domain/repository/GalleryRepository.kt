@@ -39,6 +39,7 @@ interface GalleryRepository {
     suspend fun clearAllPhotos()
     suspend fun getLocalAlbums(): List<Album>
     suspend fun getThumbnailForAlbum(albumId: Long): File?
+    suspend fun getPhotoName(albumId: Long, photoId: Long): String?
 }
 
 data class DownloadProgress(
