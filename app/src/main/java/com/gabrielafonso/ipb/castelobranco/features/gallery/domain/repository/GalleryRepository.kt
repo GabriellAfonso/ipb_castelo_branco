@@ -2,10 +2,14 @@ package com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository
 
 import com.gabrielafonso.ipb.castelobranco.features.gallery.data.repository.Album
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 
 interface GalleryRepository {
+    val albumsFlow: StateFlow<List<Album>>
 
+    // Chamado no MainViewModel para ler as pastas e popular o albumsFlow
+    suspend fun preload()
     /**
      * Baixa todas as fotos de um álbum.
      *

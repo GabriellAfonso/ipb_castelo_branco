@@ -14,10 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.core.ui.components.ThemeToggle
 import com.gabrielafonso.ipb.castelobranco.core.ui.base.BaseScreen
+import com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository.GalleryRepository
+import com.gabrielafonso.ipb.castelobranco.features.gallery.presentation.viewmodel.GalleryViewModel
 import com.gabrielafonso.ipb.castelobranco.features.settings.entry.SettingsActivity
 import com.gabrielafonso.ipb.castelobranco.features.main.entry.MainActivity
 import com.gabrielafonso.ipb.castelobranco.features.settings.presentation.viewmodel.SettingsViewModel
@@ -57,10 +61,8 @@ fun SettingsView(
     SettingsScreen(
         onBackClick = onBackClick,
         darkMode = resolvedDark,
-        onToggleDark = {
-            // apenas solicita toggle; o recreate será acionado quando o ViewModel emitir o evento
-            viewModel.toggleDarkMode()
-        }
+        onToggleDark = { viewModel.toggleDarkMode() },
+        onClearGallery = { viewModel.clearGallery() }
     )
 }
 
@@ -68,7 +70,8 @@ fun SettingsView(
 fun SettingsScreen(
     onBackClick: () -> Unit,
     darkMode: Boolean,
-    onToggleDark: () -> Unit
+    onToggleDark: () -> Unit,
+    onClearGallery: () -> Unit,
 ) {
     BaseScreen(
         tabName = "Configurações",
@@ -86,6 +89,11 @@ fun SettingsScreen(
                 checked = darkMode,
                 onCheckedChange = { onToggleDark() }
             )
+           Button(
+                    onClick = onClearGallery,
+                ) {
+                    Text("Apagar galeria")
+                }
         }
     }
 }

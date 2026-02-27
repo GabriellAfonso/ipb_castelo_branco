@@ -3,6 +3,7 @@ package com.gabrielafonso.ipb.castelobranco.features.settings.presentation.viewm
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository.GalleryRepository
 import com.gabrielafonso.ipb.castelobranco.features.settings.domain.model.ThemeMode
 import com.gabrielafonso.ipb.castelobranco.features.settings.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +21,8 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val repository: SettingsRepository
+    private val repository: SettingsRepository,
+    private val galleryRepository: GalleryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -42,6 +44,12 @@ class SettingsViewModel @Inject constructor(
                     darkMode = dark
                 )
             }
+        }
+    }
+
+    fun clearGallery() {
+        viewModelScope.launch {
+            galleryRepository.clearAllPhotos()
         }
     }
 

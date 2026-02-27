@@ -30,14 +30,12 @@ class GalleryViewModel @Inject constructor(
         MutableStateFlow(GalleryDownloadState())
     val downloadState: StateFlow<GalleryDownloadState> = _downloadState
 
-    private val _albums =
-        MutableStateFlow<List<Album>>(emptyList())
-    val albums: StateFlow<List<Album>> = _albums
+  val albums = repository.albumsFlow
 
     private val thumbnails = mutableMapOf<Long, MutableStateFlow<File?>>()
 
     init {
-        loadLocalAlbums()
+
     }
 
     fun getAlbumThumbnail(albumId: Long): StateFlow<File?> {
@@ -50,7 +48,7 @@ class GalleryViewModel @Inject constructor(
         }.asStateFlow()
     }
 
-    fun downloadAllPhotos() {
+ fun downloadAllPhotos() {
         if (_downloadState.value.isDownloading) return
 
         viewModelScope.launch {
@@ -62,24 +60,15 @@ class GalleryViewModel @Inject constructor(
                         total = progress.total
                     )
                 }
-
-                if (progress.downloaded == progress.total) {
-                    loadLocalAlbums()
-                }
             }
         }
     }
 
-    fun loadLocalAlbums() {
-        viewModelScope.launch {
-            _albums.value = repository.getLocalAlbums()
-        }
-    }
 
-    fun clearGallery() {
+
+  fun clearGallery() {
         viewModelScope.launch {
             repository.clearAllPhotos()
-            _albums.value = emptyList()
             _downloadState.value = GalleryDownloadState()
         }
     }

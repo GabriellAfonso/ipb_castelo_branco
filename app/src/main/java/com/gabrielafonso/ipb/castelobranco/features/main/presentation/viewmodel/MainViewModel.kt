@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.RefreshResult
 import com.gabrielafonso.ipb.castelobranco.core.domain.snapshot.SnapshotState
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.local.AuthSession
+import com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository.GalleryRepository
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.domain.repository.HymnalRepository
 import com.gabrielafonso.ipb.castelobranco.features.profile.domain.repository.ProfileRepository
 import com.gabrielafonso.ipb.castelobranco.features.schedule.domain.repository.ScheduleRepository
@@ -29,6 +30,7 @@ class MainViewModel @Inject constructor(
     private val songsRepository: SongsRepository,
     private val hymnalRepository: HymnalRepository,
     private val scheduleRepository: ScheduleRepository,
+    private val galleryRepository: GalleryRepository,
     private val authSession: AuthSession,
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
@@ -81,10 +83,11 @@ class MainViewModel @Inject constructor(
     private suspend fun preloadCachesFromDisk() = withContext(Dispatchers.IO) {
         supervisorScope {
             val preloads = listOf(
-//                launch { songsRepository.preload() },
-//                launch { hymnalRepository.preload() },
+//              launch { songsRepository.preload() },
+//              launch { hymnalRepository.preload() },
                 launch { scheduleRepository.preload() },
-//                launch { profileRepository.preload() }
+                launch { galleryRepository.preload() },
+//              launch { profileRepository.preload() }
             )
             preloads.joinAll()
         }

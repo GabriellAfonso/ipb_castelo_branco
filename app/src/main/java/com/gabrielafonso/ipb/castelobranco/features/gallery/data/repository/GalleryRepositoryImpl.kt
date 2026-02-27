@@ -7,6 +7,9 @@ import com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository.Do
 import com.gabrielafonso.ipb.castelobranco.features.gallery.domain.repository.GalleryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -23,6 +26,18 @@ class GalleryRepositoryImpl @Inject constructor(
     private val storage: GalleryPhotoStorage,
 ) : GalleryRepository {
 
+    // 1. ESTADOS QUENTES: Moram aqui no Singleton e são alimentados pelo preload
+    private val _albumsFlow = MutableStateFlow<List<Album>>(emptyList())
+    override val albumsFlow: StateFlow<List<Album>> = _albumsFlow.asStateFlow()
+
+    /**
+     * Chamado pelo MainViewModel. Lê o disco e popula os Flows acima.
+     */
+    override suspend fun preload() = withContext(Dispatchers.IO) {
+        // Carrega álbuns
+        val albums = storage.listAlbums().map { Album(it.first, it.second) }
+        _albumsFlow.value = albums
+    }
     override fun downloadAlbum(albumId: Long): Flow<DownloadProgress> = flow {
         val photos = api.getAlbumPhotos(albumId)
         emitAll(processDownload(photos))
@@ -32,6 +47,8 @@ class GalleryRepositoryImpl @Inject constructor(
         val photos = api.getAllPhotos().body()
             ?: throw Exception("Lista de fotos vazia")
         emitAll(processDownload(photos))
+        // IMPORTANTE: Atualiza o Flow assim que o download acaba
+        preload()
     }
 
     /**
@@ -50,6 +67,7 @@ class GalleryRepositoryImpl @Inject constructor(
         for (photo in photos) {
             val albumId = photo.albumId
             val photoId = photo.id
+            val photoName = photo.name
 
             if (!storage.exists(albumId, photoId)) {
                 val response = api.downloadFile(photo.imageUrl)
@@ -64,6 +82,7 @@ class GalleryRepositoryImpl @Inject constructor(
                 storage.save(
                     albumId = albumId,
                     photoId = photoId,
+                    photoName = photoName,
                     ext = photo.fileExtension(),
                     input = body.byteStream()
                 )
@@ -97,6 +116,7 @@ class GalleryRepositoryImpl @Inject constructor(
     override suspend fun clearAllPhotos() =
         withContext(Dispatchers.IO) {
             storage.clearAll()
+            preload()
         }
 
     override suspend fun getLocalAlbums(): List<Album> = withContext(Dispatchers.IO) {

@@ -12,10 +12,10 @@ import retrofit2.http.Path
 
 interface GalleryApi {
 
-    @GET("api/photos/")
+    @GET(GalleryEndpoints.DOWNLOAD_ALL_PHOTOS)
     suspend fun getAllPhotos(): Response<List<GalleryPhotoDto>>
 
-    @GET("api/albums/{id}/photos/")
+    @GET(GalleryEndpoints.DOWNLOAD_ALBUM)
     suspend fun getAlbumPhotos(
         @Path("id") albumId: Long
     ): List<GalleryPhotoDto>

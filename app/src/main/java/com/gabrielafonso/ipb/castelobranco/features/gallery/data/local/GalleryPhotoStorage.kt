@@ -22,11 +22,12 @@ class GalleryPhotoStorage(
     fun save(
         albumId: Long,
         photoId: Long,
+        photoName: String,
         ext: String,
         input: InputStream
     ): File {
         val dir = albumDir(albumId).apply { mkdirs() }
-        val file = File(dir, "$photoId.$ext")
+        val file = File(dir, "$photoName.$ext")
 
         FileOutputStream(file).use { output ->
             input.copyTo(output)
