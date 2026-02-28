@@ -2,6 +2,7 @@
 package com.gabrielafonso.ipb.castelobranco.features.auth.presentation.views
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,18 +26,26 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import com.gabrielafonso.ipb.castelobranco.BuildConfig
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.core.ui.base.BaseScreen
 import com.gabrielafonso.ipb.castelobranco.features.auth.presentation.viewmodel.AuthViewModel
 import com.gabrielafonso.ipb.castelobranco.features.main.entry.goToMainAsRoot
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import androidx.credentials.CustomCredential
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +59,8 @@ fun AuthView(
     val passwordVisible = remember { mutableStateOf(false) }
 
     val loginError by viewModel.loginError.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(loginError) {
         if (!loginError.isNullOrBlank()) {
@@ -58,8 +69,6 @@ fun AuthView(
         }
     }
 
-    val context = LocalContext.current
-
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
@@ -67,8 +76,46 @@ fun AuthView(
                     val msg = "Logado com Sucesso"
                     (context as? Activity)?.goToMainAsRoot(message = msg)
                 }
+
                 else -> {}
             }
+        }
+    }
+
+    suspend fun launchGoogleSignIn() {
+        Log.d("GoogleSignIn", "Iniciando fluxo Google Sign-In")
+        val credentialManager = CredentialManager.create(context)
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(BuildConfig.GOOGLE_CLIENT_ID)
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        try {
+            Log.d("GoogleSignIn", "Chamando credentialManager.getCredential...")
+            val response = credentialManager.getCredential(context, request)
+            val credential = response.credential
+            Log.d(
+                "GoogleSignIn",
+                "Credential recebida: ${credential::class.simpleName} - type: ${credential.type}"
+            )
+
+            if (credential is GoogleIdTokenCredential) {
+                viewModel.signInWithGoogle(credential.idToken)
+            } else if (credential is CustomCredential &&
+                credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+            ) {
+                val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                Log.d("GoogleSignIn", "idToken extraído: ${googleCredential.idToken.take(20)}")
+                viewModel.signInWithGoogle(googleCredential.idToken)
+            } else {
+                Log.w("GoogleSignIn", "Tipo de credential não reconhecido: ${credential.type}")
+            }
+        } catch (e: Exception) {
+            Log.e("GoogleSignIn", "Erro: ${e::class.simpleName} - ${e.message}", e)
         }
     }
 
@@ -114,11 +161,14 @@ fun AuthView(
                     .padding(top = 8.dp),
                 visualTransformation = if (passwordVisible.value) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val img = if (passwordVisible.value) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                    val img =
+                        if (passwordVisible.value) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
                         imageVector = img,
                         contentDescription = if (passwordVisible.value) "Ocultar senha" else "Mostrar senha",
-                        modifier = Modifier.clickable { passwordVisible.value = !passwordVisible.value }
+                        modifier = Modifier.clickable {
+                            passwordVisible.value = !passwordVisible.value
+                        }
                     )
                 }
             )
@@ -143,18 +193,18 @@ fun AuthView(
                 Text("Ainda não tem uma conta? Registre-se")
             }
 
-//            Button(
-//                onClick = { viewModel.signInWithGoogle() },
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = MaterialTheme.colorScheme.primary,
-//                    contentColor = MaterialTheme.colorScheme.onPrimary
-//                ),
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(top = 12.dp)
-//            ) {
-//                Text("Entrar com Google")
-//            }
+            Button(
+                onClick = { coroutineScope.launch { launchGoogleSignIn() } },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+                Text("Entrar com Google")
+            }
         }
     }
 }

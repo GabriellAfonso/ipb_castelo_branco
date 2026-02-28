@@ -1,6 +1,12 @@
 import com.android.build.api.dsl.ApplicationExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import java.util.Properties
+
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(f.inputStream())
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -22,14 +28,18 @@ extensions.configure<ApplicationExtension> {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "0.5.2"
+        versionName = "0.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField(
+            "String", "GOOGLE_CLIENT_ID",
+            "\"${localProps.getProperty("GOOGLE_CLIENT_ID", "")}\""
+        )
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.100:8000/\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000/\"")
             isMinifyEnabled = false
         }
 
@@ -128,4 +138,7 @@ dependencies {
 
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
 }

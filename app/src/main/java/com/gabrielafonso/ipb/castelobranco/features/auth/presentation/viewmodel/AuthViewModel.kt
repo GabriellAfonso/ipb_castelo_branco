@@ -91,6 +91,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun signInWithGoogle(idToken: String) {
+        Log.d("GoogleSignIn", "signInWithGoogle chamado")
+        viewModelScope.launch {
+            _loginError.value = null
+            try {
+                val result = repository.signInWithGoogle(idToken)
+                result.onSuccess {
+                    val ok = fetchUserData()
+                    if (!ok) {
+                        _loginError.value = "Falha ao carregar dados do usuário"
+                        return@onSuccess
+                    }
+                    _events.tryEmit(AuthEvent.LoginSuccess)
+                }.onFailure { throwable ->
+                    _loginError.value = throwable.message ?: "Erro ao entrar com Google"
+                }
+            } catch (e: Exception) {
+                _loginError.value = e.message ?: "Erro inesperado"
+            }
+        }
+    }
+
     fun singUp(
         username: String,
         firstName: String,
@@ -101,13 +123,15 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _registerErrors.value = RegisterErrors()
             try {
-                val result = repository.signUp(username, firstName, lastName, password, passwordConfirm)
+                val result =
+                    repository.signUp(username, firstName, lastName, password, passwordConfirm)
                 result.onSuccess { authResponse ->
                     Log.d(TAG, "Registro sucesso: $authResponse")
 
                     val ok = fetchUserData()
                     if (!ok) {
-                        _registerErrors.value = RegisterErrors(general = "Falha ao carregar dados do usuário")
+                        _registerErrors.value =
+                            RegisterErrors(general = "Falha ao carregar dados do usuário")
                         return@onSuccess
                     }
 
@@ -181,6 +205,7 @@ class AuthViewModel @Inject constructor(
                 value.length() > 0 -> value.optString(0, value.toString())
                 else -> value.toString()
             }
+
             is JSONObject -> value.optString("detail", value.toString())
             else -> value?.toString().orEmpty().ifBlank { "Erro ao fazer login" }
         }

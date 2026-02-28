@@ -4,10 +4,12 @@ import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.LoginRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.RefreshRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.RegisterRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.domain.model.AuthTokens
+import kotlinx.serialization.Serializable
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
-
+@Serializable
+data class GoogleLoginRequest(val id_token: String)
 interface AuthApi {
 
     @POST(AuthEndpoins.AUTH_LOGIN_PATH)
@@ -25,4 +27,6 @@ interface AuthApi {
         @Body request: RefreshRequest
     ): Response<AuthTokens>
 
+    @POST(AuthEndpoins.GOOGLE_AUTH_LOGIN)
+    suspend fun loginWithGoogle(@Body body: GoogleLoginRequest): Response<AuthTokens>
 }

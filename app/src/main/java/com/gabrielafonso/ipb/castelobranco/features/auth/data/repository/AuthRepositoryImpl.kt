@@ -1,6 +1,8 @@
 package com.gabrielafonso.ipb.castelobranco.features.auth.data.repository
 
+import android.util.Log
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.AuthApi
+import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.GoogleLoginRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.domain.model.AuthTokens
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.LoginRequest
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.dto.RegisterRequest
@@ -9,6 +11,7 @@ import com.gabrielafonso.ipb.castelobranco.features.auth.domain.repository.AuthR
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
+
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApi,
@@ -22,6 +25,13 @@ class AuthRepositoryImpl @Inject constructor(
         authenticate {
             api.login(LoginRequest(username, password))
         }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<AuthTokens> {
+        Log.d("GoogleSignIn", "Enviando idToken para o backend: ${idToken.take(20)}...")
+        return authenticate {
+            api.loginWithGoogle(GoogleLoginRequest(id_token = idToken))
+        }
+    }
 
     override suspend fun signUp(
         username: String,
@@ -54,22 +64,22 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<AuthTokens> =
         runCatching {
             val response = call()
+            Log.d("GoogleSignIn", "Response code: ${response.code()}")
 
-           if (!response.isSuccessful) {
-            // Pega o JSON de erro do servidor (ex: {"detail": "..."})
-            val errorBody = response.errorBody()?.string()
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string()
+                Log.e("GoogleSignIn", "Erro do servidor: $errorBody")
+                throw Exception(errorBody ?: "HTTP ${response.code()}")
+            }
 
-            // Se houver um corpo de erro, lança ele, senão lança o código HTTP
-            throw Exception(errorBody ?: "HTTP ${response.code()}")
-        }
-
-            val tokens = response.body()
-                ?: throw Exception("Resposta vazia")
+            val tokens = response.body() ?: throw Exception("Resposta vazia")
 
             require(tokens.access.isNotBlank()) { "Access token ausente" }
             require(tokens.refresh.isNotBlank()) { "Refresh token ausente" }
 
             tokenStorage.save(tokens)
             tokens
+        }.onFailure { e ->
+            Log.e("GoogleSignIn", "Falha no authenticate: ${e::class.simpleName} - ${e.message}", e)
         }
 }
