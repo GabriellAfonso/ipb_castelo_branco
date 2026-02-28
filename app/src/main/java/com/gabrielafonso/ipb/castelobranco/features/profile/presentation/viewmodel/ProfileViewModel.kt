@@ -49,6 +49,9 @@ class ProfileViewModel @Inject constructor(
     private val _isMember = MutableStateFlow<Boolean?>(null)
     val isMember: StateFlow<Boolean?> = _isMember.asStateFlow()
 
+    private val _isAdmin = MutableStateFlow<Boolean?>(null)
+    val isAdmin: StateFlow<Boolean?> = _isAdmin.asStateFlow()
+
     init {
         observeProfile()
         refreshLocalPhotoPathAndBump()
@@ -73,6 +76,7 @@ class ProfileViewModel @Inject constructor(
 
                             _profileActive.value = profile.active
                             _isMember.value = profile.isMember
+                            _isAdmin.value = profile.isAdmin
                             _photoUrl.value = profile.photoUrl
 
                             handleProfilePhoto(profile.photoUrl)
