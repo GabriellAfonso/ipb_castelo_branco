@@ -64,9 +64,15 @@ class GalleryRepositoryImpl @Inject constructor(
     }
 
     override fun downloadAllPhotos(): Flow<DownloadProgress> = flow {
-        val photos = api.getAllPhotos().body() ?: throw Exception("Lista de fotos vazia")
+        val response = api.getAllPhotos()
+
+        if (!response.isSuccessful) {
+            throw Exception("Erro HTTP ${response.code()}")
+        }
+
+        val photos = response.body() ?: emptyList()
         emitAll(processDownload(photos))
-        _photosFlow.value = emptyMap() // Reseta cache de fotos
+        _photosFlow.value = emptyMap()
         preload()
     }
 
