@@ -78,9 +78,13 @@ private fun TopBarNavigation(
     onMenuClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    val view = androidx.compose.ui.platform.LocalView.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (showBackArrow) {
-            IconButton(onClick = onBackClick) {
+            IconButton(onClick = {
+                view.playSoundEffect(android.view.SoundEffectConstants.NAVIGATION_DOWN)
+                onBackClick()
+            }) {
                 Icon(
                     painter = painterResource(id = R.drawable.back_arrow_icon),
                     contentDescription = "Voltar",

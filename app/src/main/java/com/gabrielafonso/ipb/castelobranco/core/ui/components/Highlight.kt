@@ -4,18 +4,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +26,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextOverflow
+import com.gabrielafonso.ipb.castelobranco.features.schedule.presentation.components.ScheduleSectionUi
+
 // ─── Main Highlight Carousel ────────────────────────────────────────────────
 
 @Composable
@@ -99,10 +101,94 @@ fun Highlight(
     }
 }
 
+@Composable
+fun HighlightSundaySchedule(section: ScheduleSectionUi) {
+    val rows = section.rows.sortedBy { it.day }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        // Title + time
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = section.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (section.time.isNotBlank()) {
+                Text(
+                    text = section.time,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+
+        // Table header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceDim)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "Dia",
+                modifier = Modifier.weight(0.25f),
+                style = MaterialTheme.typography.labelLarge
+            )
+            Text(
+                text = "Responsável",
+                modifier = Modifier.weight(0.75f),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        // Schedule rows
+        Column(modifier = Modifier.fillMaxWidth()) {
+            rows.forEachIndexed { index, row ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = String.format(java.util.Locale.getDefault(), "%02d", row.day),
+                        modifier = Modifier.weight(0.25f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = row.member,
+                        modifier = Modifier.weight(0.75f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (index != rows.lastIndex) {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                    )
+                }
+            }
+        }
+    }
+}
 // ─── Default Composables ─────────────────────────────────────────────────────
 
 @Composable
-fun HighlightEscalaIndisponivel() {
+fun HighlightScheduleUnavailable() {
     HighlightPlaceholder(
         icon = "📅",
         title = "Escala",
@@ -111,7 +197,7 @@ fun HighlightEscalaIndisponivel() {
 }
 
 @Composable
-fun HighlightAniversariantes() {
+fun HighlightBirthdays() {
     HighlightPlaceholder(
         icon = "🎂",
         title = "Aniversariantes do Mês",
@@ -120,7 +206,7 @@ fun HighlightAniversariantes() {
 }
 
 @Composable
-fun HighlightEventos() {
+fun HighlightEvents() {
     HighlightPlaceholder(
         icon = "📌",
         title = "Eventos",
@@ -167,9 +253,9 @@ private fun HighlightPlaceholder(
 private fun HighlightPreview() {
     Highlight(
         pages = listOf(
-            { HighlightEscalaIndisponivel() },
-            { HighlightAniversariantes() },
-            { HighlightEventos() }
+            { HighlightScheduleUnavailable() },
+            { HighlightBirthdays() },
+            { HighlightEvents() }
         )
     )
 }

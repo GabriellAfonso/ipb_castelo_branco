@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabrielafonso.ipb.castelobranco.core.ui.theme.ipbGreen
@@ -27,8 +28,12 @@ fun CustomButton(
     size: Dp = 100.dp,
     backgroundColor: Color = ipbGreen,
 ) {
+    val view = LocalView.current
     Button(
-        onClick = onClick,
+        onClick = {
+            view.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+            onClick()
+        },
         modifier = modifier.size(size),
         shape = RoundedCornerShape(ButtonCornerRadius),
         contentPadding = PaddingValues(ButtonContentPadding),
