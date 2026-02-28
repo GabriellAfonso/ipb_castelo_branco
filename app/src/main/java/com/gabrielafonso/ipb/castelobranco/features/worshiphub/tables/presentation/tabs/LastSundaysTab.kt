@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +37,19 @@ private val columns = listOf(
 )
 
 @Composable
-fun LastSundaysTab(sundays: List<SundaySet>) {
+fun LastSundaysTab(sundays: List<SundaySet>, searchQuery: String = "") {
+    val filtered = remember(sundays, searchQuery) {
+    if (searchQuery.isBlank()) sundays
+    else sundays.filter { sunday ->
+        val matchDate = sunday.date.contains(searchQuery, ignoreCase = true)
+        val hasMatchingSong = sunday.songs.any { song ->
+            song.title.contains(searchQuery, ignoreCase = true) ||
+            song.artist.contains(searchQuery, ignoreCase = true) ||
+            song.tone.contains(searchQuery, ignoreCase = true)
+        }
+        matchDate || hasMatchingSong
+    }
+}
     Column(modifier = Modifier.fillMaxWidth()) {
         Header(columns)
 
@@ -45,12 +58,13 @@ fun LastSundaysTab(sundays: List<SundaySet>) {
             contentPadding = PaddingValues(0.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            items(sundays) { sunday ->
+            items(filtered) { sunday ->  // ← era `sundays`, agora é `filtered`
                 SundaySection(sunday = sunday)
             }
         }
     }
 }
+
 
 
 @Composable
@@ -100,7 +114,12 @@ fun SundaySongRow(
             Text(song.position.toString(), color = textColor)
         }
 
-        Box(Modifier.weight(columns[1].weight).padding(end = 30.dp), contentAlignment = Alignment.CenterStart) {
+        Box(
+            Modifier
+                .weight(columns[1].weight)
+                .padding(end = 30.dp),
+            contentAlignment = Alignment.CenterStart
+        ) {
             Text(
                 song.title,
                 color = textColor,
