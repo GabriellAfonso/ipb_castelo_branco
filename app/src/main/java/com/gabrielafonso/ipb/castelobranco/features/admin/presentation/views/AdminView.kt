@@ -68,7 +68,7 @@ fun AdminScreen(
             description = "Criar escala mensal de atividades",
             icon = Icons.Filled.DateRange,
             accentColor = green,
-            onClick = { /* TODO */ }
+            onClick = nav.schedule
         ),
     )
 

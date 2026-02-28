@@ -33,7 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabrielafonso.ipb.castelobranco.R
 import com.gabrielafonso.ipb.castelobranco.core.ui.base.BaseScreen
 import com.gabrielafonso.ipb.castelobranco.features.admin.presentation.navigation.AdminNav
-import com.gabrielafonso.ipb.castelobranco.features.admin.register.presentation.components.DateFieldWithPicker
+import com.gabrielafonso.ipb.castelobranco.core.ui.components.DateFieldWithPicker
 import com.gabrielafonso.ipb.castelobranco.features.admin.register.presentation.components.MusicSongRegistrationForm
 import com.gabrielafonso.ipb.castelobranco.features.admin.register.presentation.components.RegistrationTypeSelect
 import com.gabrielafonso.ipb.castelobranco.features.admin.register.presentation.components.SundayDatePickerDialog

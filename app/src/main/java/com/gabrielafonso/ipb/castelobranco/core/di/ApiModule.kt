@@ -1,6 +1,7 @@
 package com.gabrielafonso.ipb.castelobranco.core.di
 
 import com.gabrielafonso.ipb.castelobranco.features.admin.register.data.api.WorshipRegisterApi
+import com.gabrielafonso.ipb.castelobranco.features.admin.schedule.data.api.AdminScheduleApi
 import com.gabrielafonso.ipb.castelobranco.features.auth.data.api.AuthApi
 import com.gabrielafonso.ipb.castelobranco.features.gallery.data.api.GalleryApi
 import com.gabrielafonso.ipb.castelobranco.features.hymnal.data.api.HymnalApi
@@ -59,4 +60,10 @@ object ApiModule {
     fun provideGalleryApi(
         @AuthedRetrofit retrofit: Retrofit
     ): GalleryApi = retrofit.create(GalleryApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAdminScheduleApi(
+        @AuthedRetrofit retrofit: Retrofit
+    ): AdminScheduleApi = retrofit.create(AdminScheduleApi::class.java)
 }
